@@ -8,3 +8,6 @@ create sensible git commits in between and continue until the app builds with gr
 
 ## 26-10-01 20:12
 only stop once the app builds properly, and also create a run.sh script that opens the app as a webapp in the browser.
+
+## 26-10-01 20:18
+also create a mobile-build.sh script that prepares the app so it can be opened in Android Studio.

@@ -12,7 +12,8 @@
     "build": "esbuild src/main.ts --bundle --outfile=dist/bundle.js && esbuild src/physics-worker.ts --bundle --outfile=dist/worker.js",
     "dev": "esbuild src/main.ts --bundle --outfile=dist/bundle.js --watch & esbuild src/physics-worker.ts --bundle --outfile=dist/worker.js --watch",
     "build:app": "npm run build && rm -rf www && mkdir -p www/dist && cp index.html LICENSE www/ && cp dist/bundle.js dist/worker.js www/dist/",
-    "sync:app": "npm run build:app && cap sync"
+    "sync:app": "npm run build:app && cap sync",
+    "test": "node scripts/test-app.mjs"
   },
   "devDependencies": {
     "@capacitor/cli": "^8.5.2",

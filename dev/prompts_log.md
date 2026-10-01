@@ -11,3 +11,9 @@ only stop once the app builds properly, and also create a run.sh script that ope
 
 ## 26-10-01 20:18
 also create a mobile-build.sh script that prepares the app so it can be opened in Android Studio.
+
+## 26-10-02
+link the original repo and explain how this repo was forked from it — apparently no files are identical.
+
+## 26-10-02
+shouldn't the original Primordium also be added as a remote and linked in the README?

@@ -64,3 +64,19 @@ very small dots in the same color as the bonds.
 In the tutorial, the first step "open the menu bar" is always fulfilled
 immediately and is unnecessary anyway — opening the menu bar is nothing
 one needs to learn separately.
+
+## 26-10-03 01:10
+Tutorial step "Genome copying & division": nothing happens, since a new
+game has no food/free polymerase near the pasted cell — or am I seeing
+that wrong?
+
+## 26-10-03 01:35
+In the tutorial the inspect step moves on too fast — the 'i' window
+closes itself immediately; the user should be asked to close it with
+the right button or Esc or whatever is needed.
+
+## 26-10-03 02:00
+Select atom must also be switchable off, otherwise you can't drag —
+explain that in the tutorial. Also, when an atom was selected and the
+cell gets dropped, make sure no atom of an existing cell is selected
+initially — otherwise the new cell drops right into the other cell.

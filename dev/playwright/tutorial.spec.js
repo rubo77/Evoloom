@@ -48,8 +48,13 @@ test('guided tutorial gates task steps on real user actions', async ({ page }) =
   await page.mouse.up();
   await expectStep(page, 'open the inspector');
 
-  // ── Task: inspector ──
+  // ── Task: inspector open + close ──
   await page.keyboard.press('i');
+  await expectStep(page, 'close the inspector');
+  await page.keyboard.press('Escape');    // closes the inspector, not the tour
+  await expectStep(page, 'switch Select off');
+  await expect(page.locator('#tut-next')).toBeDisabled(); // gated
+  await page.click('#select-btn');        // toggles back to pan
   await expectStep(page, 'A real protocell');              // demo step
   await page.screenshot({ path: 'test-results/gt-protocell.png' });
 

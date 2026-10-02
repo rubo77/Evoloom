@@ -545,6 +545,7 @@ function setBrush(next: Brush): void {
   // ON/OFF suffix in the label so users see the button toggles back to pan
   soupBrushBtn.querySelector('.brush-state')!.textContent = brushMode === 'soup' ? 'ON' : 'OFF';
   waterBrushBtn.querySelector('.brush-state')!.textContent = brushMode === 'water' ? 'ON' : 'OFF';
+  selectBtn.querySelector('.brush-state')!.textContent = brushMode === 'select' ? 'ON' : 'OFF';
   canvas.style.cursor = brushMode === 'pan' ? 'grab' : 'crosshair';
   // Leaving select mode → drop any current selection so the halo disappears.
   if (prev === 'select' && brushMode !== 'select') send({ type: 'deselectAll' });
@@ -2621,6 +2622,16 @@ function launchTutorial(): void {
     viewCenterWorld: () => {
       const rect = canvas.getBoundingClientRect();
       return screenToWorld(rect.left + rect.width / 2, rect.top + rect.height / 2);
+    },
+    getBrush: () => brushMode,
+    // Slide the viewport ~35 % toward the nearest horizontal arena edge —
+    // used before scripted drops so pasted content lands in open space
+    // instead of on top of whatever the user was inspecting at center.
+    panTowardEdge: () => {
+      const vw = canvas.width / camera.zoom;
+      const cx = camera.x + vw / 2;
+      const dir = cx < GRID_W / 2 ? -1 : 1;
+      camera.x = Math.max(0, Math.min(GRID_W - vw, camera.x + dir * vw * 0.35));
     },
     setSpeed: (n) => {
       speedSlider.value = String(n);

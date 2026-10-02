@@ -33,6 +33,10 @@ test('a atoms render as visible dots', async ({ page }) => {
   await page.mouse.up();
   await expect(page.locator('.tutorial-title')).toContainText('open the inspector', { timeout: 8000 });
   await page.keyboard.press('i');
+  await expect(page.locator('.tutorial-title')).toContainText('close the inspector', { timeout: 8000 });
+  await page.keyboard.press('Escape'); // closes the inspector, not the tour
+  await expect(page.locator('.tutorial-title')).toContainText('switch Select off', { timeout: 8000 });
+  await page.click('#select-btn');
   await expect(page.locator('.tutorial-title')).toContainText('A real protocell', { timeout: 8000 });
 
   // leave the tour (pasted cell stays), clear the inspector, zoom in

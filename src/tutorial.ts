@@ -25,6 +25,9 @@ export interface TutorialDeps {
   closeInspector(): void;
   isInspectorOpen(): boolean;
   viewCenterWorld(): { x: number; y: number };
+  getBrush(): 'pan' | 'soup' | 'water' | 'select';
+  /** Slide the viewport toward the nearest arena edge (scripted drops). */
+  panTowardEdge(): void;
   setSpeed(n: number): void;
   getSpeed(): number;
   setLysin(on: boolean): void;
@@ -102,6 +105,12 @@ function buildDemoCell(): SelectionState {
   for (let i = 8; i >= 0; i--) { const c = add((i + 1) * D, sy, 'a', S); bond(c, prev); prev = c; }
   bond(prev, memStart);
 
+  // Two free 'd' polymerases inside the cell — the strand's own 'd' is
+  // bonded into the template and can't act as enzyme. Seeding free ones
+  // near the 'e' anchor makes replication start reliably in a fresh soup.
+  add(1.6 * D, 0.6 * D, 'd', 0);
+  add(0.4 * D, -0.6 * D, 'd', 0);
+
   return {
     magic: 'primordium-selection', version: 1,
     savedAt: new Date().toISOString(),
@@ -149,23 +158,45 @@ const STEPS: Step[] = [
     title: 'Task: select some atoms',
     task: (_d, saw) => saw('selectAt') || saw('selectBox'),
     html: `<span class="tutorial-task">TASK — press <kbd>M</kbd>, hit
-      <b>🎯 Select atom</b>, then <b>click an atom</b> or drag a box around
-      several.</span><br><br>A halo marks the selection. The <kbd>Del</kbd>
-      key would delete it — don't worry, you can try that later.`,
+      <b>🎯 Select</b>, then <b>click an atom</b> or drag a box around
+      several.</span><br><br>A halo marks the selection. The button label
+      shows ON — like the brushes, <b>clicking it again switches it off</b>
+      and gets you back to panning (outside the tour, <kbd>Esc</kbd>
+      does too).`,
   },
   {
     title: 'Task: open the inspector',
     task: (d) => d.isInspectorOpen(),
-    exit: (d) => { if (d.isInspectorOpen()) d.closeInspector(); },
     html: `<span class="tutorial-task">TASK — press <kbd>I</kbd> to open the
       <b>inspector</b>: a frozen atom-level view of your selection.</span>
       <br><br>In <b>Edit</b> mode you could add, bond or delete atoms —
       for now just look, then continue.`,
   },
   {
+    title: 'Task: close the inspector',
+    task: (d) => !d.isInspectorOpen(),
+    html: `<span class="tutorial-task">TASK — close the inspector
+      yourself: the <b>✕</b> in its top-right corner, or
+      <kbd>Esc</kbd>.</span><br><br><kbd>Esc</kbd> closes the topmost
+      thing everywhere in Evoloom — inspector, panel, lab.`,
+  },
+  {
+    title: 'Task: switch Select off',
+    task: (d) => d.getBrush() === 'pan',
+    html: `<span class="tutorial-task">TASK — click <b>🎯 Select</b> in the
+      panel (<kbd>M</kbd>) again so it reads OFF.</span><br><br>With a brush
+      active you can't drag the canvas — every tool in Evoloom toggles back
+      to panning.`,
+  },
+  {
     title: 'A real protocell',
     enter: (d) => {
       d.setPaused(false);
+      // Clear any leftover selection and slide the camera toward the
+      // arena edge so the drop lands in open space, not inside whatever
+      // cell the user was inspecting at view center.
+      d.setBrush('pan');
+      d.panTowardEdge();
       const c = d.viewCenterWorld();
       d.send({ type: 'pasteSelection', x: c.x, y: c.y, selection: buildDemoCell() });
       d.logStatus('Tutorial: pasted a hand-built protocell at view center');
@@ -178,10 +209,11 @@ const STEPS: Step[] = [
   {
     title: 'Genome copying & division',
     enter: (d) => d.setSpeed(24),
-    html: `I sped the sim up. When a free <code>d</code> atom touches the
-      strand start (<code>e</code>), it acts as a <b>polymerase</b>: it
-      walks the template and builds a copy. Reaching <code>f</code> splits
-      the cell into <b>two daughters</b>.<br><br>Give it a moment — real
+    html: `I sped the sim up — and the paste slipped two <b>free
+      <code>d</code> polymerases</b> inside the membrane. When one touches
+      the strand start (<code>e</code>), it enters walk state and copies
+      the template base by base. Reaching <code>f</code> splits the cell
+      into <b>two daughters</b>.<br><br>Give it a moment — real
       replication, driven only by local reaction rules.`,
   },
   {
@@ -376,6 +408,9 @@ function goTo(next: number): void {
 function onKey(e: KeyboardEvent): void {
   if (!active) return;
   if (e.code === 'Escape') {
+    // Inspector (and similar overlays) own Esc while open — let the
+    // app's handler close them so the "close it yourself" task works.
+    if (deps!.isInspectorOpen()) return;
     e.stopPropagation();
     closeTutorial();
   } else if (e.code === 'ArrowRight' && taskDone) {

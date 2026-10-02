@@ -7,13 +7,15 @@
 
 import { RADIUS } from './cell';
 import { STRIDE, unpackType, unpackState } from './snapshot';
+import {
+  ATOM_COLORS, FALLBACK_COLOR, MEMBRANE_LINE, PREDATOR_LINE, PLAYER_LINE,
+  PREDATOR_UNIT, ALPHA, rgbHex, alphaHex, rgba,
+} from './theme';
 
 // ── Visual constants ────────────────────────────────────────────────────────
-const COLORS: Record<string, string> = {
-  a: '#e8d68a',
-  e: '#ff3333', f: '#33ff33', b: '#888888', c: '#00dddd',
-  d: '#3366ff', p: '#ff7700', w: '#66ccff',
-};
+// All atom colors/alphas live in theme.ts — edit them there.
+const COLORS: Record<string, string> = {};
+for (const [type, rgb] of Object.entries(ATOM_COLORS)) COLORS[type] = rgbHex(rgb);
 // Lab additions land here too so the educational 2D fallback colors
 // custom atoms the same way as the GPU path.
 export function setEducationalAtomColor(type: string, hex: string): void {
@@ -21,15 +23,16 @@ export function setEducationalAtomColor(type: string, hex: string): void {
   if (reserved.has(type)) return;
   COLORS[type] = hex;
 }
+const FALLBACK_HEX = rgbHex(FALLBACK_COLOR);
 
 const LEGEND: { color: string; label: string; isLine?: boolean }[] = [
-  { color: '#c8a800', label: 'a  membrane unit' },
-  { color: '#888888', label: 'b  genome base' },
-  { color: '#00dddd', label: 'c  genome base' },
-  { color: '#3366ff', label: 'd  enzyme (mid-walk = bouncing)' },
-  { color: '#ff3333', label: 'e  genome start' },
-  { color: '#33ff33', label: 'f  genome end' },
-  { color: '#ff7700', label: 'p  lysin (dissolves membranes)' },
+  { color: COLORS.a, label: 'a  membrane unit' },
+  { color: COLORS.b, label: 'b  genome base' },
+  { color: COLORS.c, label: 'c  genome base' },
+  { color: COLORS.d, label: 'd  enzyme (mid-walk = bouncing)' },
+  { color: COLORS.e, label: 'e  genome start' },
+  { color: COLORS.f, label: 'f  genome end' },
+  { color: COLORS.p, label: 'p  lysin (dissolves membranes)' },
 ];
 
 const Q_STATE = 42;
@@ -369,7 +372,7 @@ export function draw2D(
     for (let i = 0; i < atomCount; i++) {
       const o = i * STRIDE;
       const flags = atoms[o + 3] | 0;
-      const isMembrane = (flags & 4) !== 0;
+      const isMembrane = (flags & 4) !== 0 && (flags & 1) !== 0;
       const state = unpackState(atoms[o + 2]);
       if (state !== 0 || isMembrane) continue;
       const h = atomHash32(i, unpackType(atoms[o + 2]), state);
@@ -388,7 +391,7 @@ export function draw2D(
     for (let i = 0; i < atomCount; i++) {
       const o = i * STRIDE;
       const flags = atoms[o + 3] | 0;
-      const isMembrane = (flags & 4) !== 0;
+      const isMembrane = (flags & 4) !== 0 && (flags & 1) !== 0;
       const state = unpackState(atoms[o + 2]);
       if (state !== 0 || isMembrane) continue;
       const h = atomHash32(i, unpackType(atoms[o + 2]), state);
@@ -405,15 +408,20 @@ export function draw2D(
     for (let i = 0; i < atomCount; i++) {
       const o = i * STRIDE;
       const flags = atoms[o + 3] | 0;
-      const isMembrane = (flags & 4) !== 0;
+      // A membrane unit is a *bonded* 'a' — flag 4 alone marks every 'a',
+      // free ones included; they belong to the soup pass (ALPHA.aFree).
+      const isMembrane = (flags & 4) !== 0 && (flags & 1) !== 0;
       const state = unpackState(atoms[o + 2]);
       const type = String.fromCharCode(unpackType(atoms[o + 2]));
       // Water always renders via soup style regardless of state (fresh
       // and spent water are the same molecule visually).
       const isWater = type === 'w';
       if ((state !== 0 && !isWater) || isMembrane) continue;
-      const alpha = type === 'p' ? '55' : '1a';
-      const key = (COLORS[type] ?? '#ff3333') + alpha;
+      // ALPHA.soupLysin / ALPHA.aFree / ALPHA.soup — tuned in theme.ts
+      const alpha = alphaHex(type === 'p' ? ALPHA.soupLysin
+                                          : type === 'a' ? ALPHA.aFree
+                                          : ALPHA.soup);
+      const key = (COLORS[type] ?? FALLBACK_HEX) + alpha;
       let arr = buckets.get(key);
       if (!arr) { arr = []; buckets.set(key, arr); }
       arr.push(i);
@@ -466,9 +474,9 @@ export function draw2D(
     ctx.lineWidth = 2.5;
     for (const { vert, n, kind } of loopOffsets) {
       smoothLoopFromIndices(loops, vert, n, loopSmoothing, _ptsA);
-      ctx.strokeStyle = kind === 1 ? 'rgba(200, 30, 0, 0.92)'
-                       : kind === 2 ? 'rgba(50, 220, 160, 0.95)'
-                       :              'rgba(200, 168, 0, 0.92)';
+      ctx.strokeStyle = kind === 1 ? rgba(PREDATOR_LINE, 0.92)
+                       : kind === 2 ? rgba(PLAYER_LINE, 0.95)
+                       :              rgba(MEMBRANE_LINE, 0.92);
       ctx.beginPath();
       tracePath(ctx, _ptsA, n, scale);
       ctx.stroke();
@@ -479,7 +487,7 @@ export function draw2D(
   const bondCount = bonds[0];
 
   // Prey open membrane chains
-  ctx.strokeStyle = bacteriaView ? 'rgba(50, 40, 30, 0.78)' : 'rgba(200, 168, 0, 0.92)';
+  ctx.strokeStyle = bacteriaView ? 'rgba(50, 40, 30, 0.78)' : rgba(MEMBRANE_LINE, 0.92);
   ctx.lineWidth = bacteriaView ? 1.0 : 2.5;
   ctx.beginPath();
   for (let bi = 0; bi < bondCount; bi++) {
@@ -496,7 +504,7 @@ export function draw2D(
   ctx.stroke();
 
   // Predator open membrane chains
-  ctx.strokeStyle = bacteriaView ? 'rgba(60, 25, 20, 0.85)' : 'rgba(200, 30, 0, 0.92)';
+  ctx.strokeStyle = bacteriaView ? 'rgba(60, 25, 20, 0.85)' : rgba(PREDATOR_LINE, 0.92);
   ctx.beginPath();
   for (let bi = 0; bi < bondCount; bi++) {
     const ai = bonds[1 + bi * 2];
@@ -528,21 +536,29 @@ export function draw2D(
     ctx.stroke();
   }
 
-  // Membrane 'a' atoms as full-size pale-yellow translucent circles sitting
-  // under the bond lines — each unit is identifiable without turning the
-  // membrane into a string of saturated beads. Predator membranes get the
-  // same treatment in pale red, matching their chains.
+  // Membrane 'a' atoms as full-size translucent circles sitting under the
+  // bond lines — each unit is identifiable without turning the membrane
+  // into a string of saturated beads. Closed-loop units stay faint (20 %),
+  // open membrane chains are more visible (60 %) — loose building material
+  // should read stronger than a finished wall. Predators get pale red.
   if (!bacteriaView) {
-    const dotR = r;
-    for (const [color, wantPredator] of [['rgba(232,214,138,0.20)', false], ['rgba(226,118,90,0.20)', true]] as const) {
+    const dotBuckets = new Map<string, number[]>();
+    for (let i = 0; i < atomCount; i++) {
+      const flags = atoms[i * STRIDE + 3] | 0;
+      if (!(flags & 4) || !(flags & 1)) continue; // bonded 'a' units only
+      const key = rgba((flags & 2) !== 0 ? PREDATOR_UNIT : ATOM_COLORS.a,
+                       inLoop[i] ? ALPHA.aInLoop : ALPHA.aInChain);
+      let arr = dotBuckets.get(key);
+      if (!arr) { arr = []; dotBuckets.set(key, arr); }
+      arr.push(i);
+    }
+    for (const [color, indices] of dotBuckets) {
       ctx.fillStyle = color;
       ctx.beginPath();
-      for (let i = 0; i < atomCount; i++) {
-        const flags = atoms[i * STRIDE + 3] | 0;
-        if (!(flags & 4) || ((flags & 2) !== 0) !== wantPredator) continue;
+      for (const i of indices) {
         const px = _displayX[i] * scale, py = _displayY[i] * scale;
-        ctx.moveTo(px + dotR, py);
-        ctx.arc(px, py, dotR, 0, Math.PI * 2);
+        ctx.moveTo(px + r, py);
+        ctx.arc(px, py, r, 0, Math.PI * 2);
       }
       ctx.fill();
     }
@@ -583,7 +599,7 @@ export function draw2D(
       // (spent water). Skip them here so they don't get bumped into the
       // large saturated organelle visual.
       if (state === 0 || isMembrane || type === 'w') continue;
-      const key = (COLORS[type] ?? '#ff3333') + 'cc';
+      const key = (COLORS[type] ?? FALLBACK_HEX) + alphaHex(ALPHA.organelle);
       let arr = buckets.get(key);
       if (!arr) { arr = []; buckets.set(key, arr); }
       arr.push(i);

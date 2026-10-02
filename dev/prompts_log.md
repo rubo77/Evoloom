@@ -20,3 +20,6 @@ shouldn't the original Primordium also be added as a remote and linked in the RE
 
 ## 26-10-02
 ok, staying with the name Primordium. The built-in manual should be extracted as How_to_play.md into the repo and linked in the README.
+
+## 26-10-02
+in How_to_play.md intro: explain how the simulation works and what is special about it; the Squirm3 reference is pointless since visitors do not know it.

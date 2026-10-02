@@ -1,9 +1,42 @@
 # Primordium — Manual
 
-An artificial chemistry simulator: atoms drift through a 2D soup, react
-with their neighbors, form bonds, and — given the right chemistry —
-self-assemble into membrane-enclosed protocells whose gene strands
-replicate by template copying. Based on Tim Hutton's Squirm3 (2007).
+Primordium is an artificial chemistry: a 2D world filled with thousands
+of atoms drifting in Brownian motion. Every atom has a **type**
+(`a`–`f`, `w`, `p`), a numeric **state**, and can form **bonds** with
+neighbors. Whenever atoms bump into each other, a small table of
+reaction rules fires: each rule pattern-matches on the atoms' types,
+states and existing bonds, then flips states and creates or breaks
+bonds — sometimes only with a probability.
+
+That is all the physics there is. What makes it special is what that
+chemistry *produces*:
+
+- **Membranes emerge.** `a` atoms polymerize into chains; when a chain
+  closes into a loop it becomes a physical container — membrane
+  elasticity sheds atoms when crumpled and absorbs free soup atoms when
+  stretched.
+- **Genes are matter.** A genome is a literal strand of bonded atoms
+  (`e-b-b-a-c-b-d-f`) tethered to the membrane. A free `d` atom acts as
+  a polymerase: it lands on the strand start (`e`), walks the template
+  base by base and builds a copy — replication is mechanical, not a
+  scripted "reproduce" call.
+- **Cells divide.** When the polymerase reaches the strand end (`f`), a
+  reaction cascade splits the cell into two daughters. The whole life
+  cycle — membrane growth, genome copying, division — falls out of a
+  few dozen local reaction rules.
+- **Evolution is real.** Noise sliders inject copy misfires, decay and
+  bond failures; mutated strands produce different cells, and cells
+  compete for soup atoms. Documented emergent behavior already goes
+  beyond the published research — see the spontaneously formed
+  meta-membrane enclosing whole cell clusters in `samples/`.
+- **Nothing is hardcoded as "a cell".** There is no cell object in the
+  engine — a cell is a self-maintaining pattern in the bond graph. You
+  can watch one be born, copy its genome, split, starve, be eaten by a
+  predator or dissolved by lysin.
+
+The sim doubles as a research instrument: pause anywhere, inspect any
+structure atom-by-atom, rewrite the chemistry live in the Lab, and
+export exact, bit-identical save states.
 
 This manual mirrors the in-app docs (controls panel, shortcuts card,
 atom dictionary).

@@ -32,3 +32,9 @@ search online for a simple explanation of Squirm3.
 
 ## 26-10-02 03:25
 rename primordium to Evoloom.
+
+## 26-10-02 03:35
+The manual is not really a tutorial. Build a tutorial button that explains everything step by step and walks through different examples. Use Playwright to complete it.
+
+## 26-10-02 03:40
+continue.

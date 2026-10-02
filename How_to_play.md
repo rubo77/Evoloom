@@ -47,6 +47,26 @@ atom dictionary).
    or `python3 -m http.server 9131`, then open `http://localhost:9131/`.
 2. The sim starts with a seeded soup. Watch protocells emerge on their
    own — or open the **Controls** panel (`M` / ☰ button) to intervene.
+3. First time? Click the **?** button (top right) or **🎓 Tutorial** in
+   the panel — an interactive tour that demos every feature live:
+   pausing, selecting, pasting a real protocell, lysin, game mode.
+
+### The manual in-game
+
+The same documentation is built into the app — you never have to leave it:
+
+- `M` (or the ☰ button) opens the **Controls** panel: every section card
+  carries inline hints, and the **Shortcuts** card lists all keybinds.
+- The **⚗️ Custom chemistry editor** button (Lab section of the panel)
+  opens the Lab modal; its **📖 Dictionary** tab explains every atom in
+  plain English — custom atoms included.
+
+### Learn the physics
+
+New to artificial chemistries? [Organic Builder](https://github.com/rubo77/OrganicBuilder)
+is a free step-by-step tutorial app that teaches this exact
+atom/state/bond reaction model through small, playable challenges —
+the fastest way to understand what Evoloom's soup is doing.
 
 ## Views
 

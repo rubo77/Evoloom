@@ -7,6 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="theme-color" content="#0a0a0a" />
   <title>Evoloom</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='13' fill='none' stroke='%23d4a64f' stroke-width='3'/%3E%3Ccircle cx='16' cy='16' r='4' fill='%23d4a64f'/%3E%3C/svg%3E">
   <style>
     /* ──────────────────────────────────────────────────────────────────────
        EVOLOOM — design system
@@ -1354,6 +1355,109 @@
       top: 12px;
       right: 12px;
     }
+
+    /* ──────────────────────────────────────────────────────────────────────
+       TUTORIAL — coach overlay. Pointer-transparent so the canvas stays
+       interactive during "try it" steps; the card itself catches clicks. */
+    #tutorial-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 400;
+      pointer-events: none;
+    }
+    #tutorial-spot {
+      position: fixed;
+      border: 2px solid var(--c-primary);
+      border-radius: 10px;
+      box-shadow: 0 0 0 9999px rgba(4, 6, 10, 0.55),
+                  0 0 24px rgba(212, 166, 79, 0.55);
+      transition: left 0.25s var(--ease), top 0.25s var(--ease),
+                  width 0.25s var(--ease), height 0.25s var(--ease);
+    }
+    #tutorial-card {
+      position: fixed;
+      left: 50%;
+      bottom: 24px;
+      transform: translateX(-50%);
+      width: min(520px, calc(100vw - 32px));
+      max-height: 45vh;
+      overflow-y: auto;
+      pointer-events: auto;
+      background: rgba(15, 22, 36, 0.96);
+      border: 1px solid rgba(212, 166, 79, 0.45);
+      border-radius: 12px;
+      box-shadow: 0 20px 60px -20px rgba(0, 0, 0, 0.7);
+      padding: 14px 16px;
+      line-height: 1.5;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+    .tutorial-step-label {
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--c-primary);
+      margin-bottom: 2px;
+    }
+    .tutorial-title {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--text-default);
+      margin-bottom: 6px;
+    }
+    .tutorial-body {
+      font-size: 0.88rem;
+      color: var(--text-muted, #aab);
+    }
+    .tutorial-body b { color: var(--text-default); }
+    .tutorial-body code {
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 4px;
+      padding: 0 4px;
+      font-size: 0.85em;
+    }
+    .tutorial-body kbd {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid var(--border-subtle);
+      border-bottom-width: 2px;
+      border-radius: 4px;
+      padding: 0 5px;
+      font-size: 0.82em;
+      font-family: inherit;
+    }
+    .tutorial-body a { color: var(--c-primary); }
+    .tutorial-nav {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .tutorial-dots {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      gap: 5px;
+      flex-wrap: wrap;
+    }
+    .tutorial-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.18);
+    }
+    .tutorial-dot.current { background: var(--c-primary); }
+    .tutorial-nav button {
+      min-height: 0;
+      padding: 6px 12px;
+      font-size: 0.82rem;
+      white-space: nowrap;
+    }
+    #tut-next {
+      background: rgba(212, 166, 79, 0.18);
+      border-color: var(--c-primary);
+      color: var(--c-primary);
+    }
+    #tut-skip { opacity: 0.7; }
   </style>
 </head>
 <body>
@@ -1376,6 +1480,7 @@
         <span class="menu-label">Controls</span>
       </button>
       <button id="fs-toggle" class="canvas-tool-btn" aria-label="Toggle fullscreen" title="Fullscreen">⛶</button>
+      <button id="tutorial-btn" class="canvas-tool-btn" aria-label="Interactive tutorial" title="Interactive tutorial">?</button>
     </div>
     <div id="game-overlay">
       <div id="game-overlay-title"></div>
@@ -1555,6 +1660,9 @@
         <button id="pause-btn">Pause<span class="kbd-badge">␣</span></button>
         <button id="view-btn">View: Educational<span class="kbd-badge">V</span></button>
         <button id="rec-btn">● REC<span class="kbd-badge">R</span></button>
+      </div>
+      <div class="card__row">
+        <button id="tutorial-btn2">🎓 Tutorial</button>
       </div>
     </div>
 

@@ -19,6 +19,7 @@ import { setCustomAtomColor as setGPUCustomColor } from './renderer-gpu';
 import { setClassicAtomColor, setEducationalAtomColor } from './renderer-2d';
 import { draw2D, draw2DClassic, drawHUD2D, drawArenaBorder } from './renderer-2d';
 import { initGPU, drawGPU } from './renderer-gpu';
+import { startTutorial } from './tutorial';
 
 // Big arena (~13× the original area). The canvas itself is viewport-sized;
 // we render only what the camera sees. Pan with mouse drag, zoom with wheel.
@@ -2595,6 +2596,41 @@ document.addEventListener('keyup', (e) => {
   if (e.code === 'KeyS') { keyState.s = false; pushPlayerInput(); }
   if (e.code === 'KeyD') { keyState.d = false; pushPlayerInput(); }
 });
+
+// ── Interactive tutorial ────────────────────────────────────────────────────
+// Thin adapters over the existing toggles — tutorial.ts stays free of UI
+// internals, and setBrush/setPaused/setLysin get idempotent semantics here.
+const tutorialBtn  = document.getElementById('tutorial-btn');
+const tutorialBtn2 = document.getElementById('tutorial-btn2');
+function launchTutorial(): void {
+  startTutorial({
+    send,
+    logStatus,
+    isPanelOpen,
+    openPanel,
+    closePanel,
+    setBrush: (b) => { if (brushMode !== b) setBrush(b); },
+    setPaused: (p) => { if (p !== paused) togglePause(); },
+    isPaused: () => paused,
+    openInspector,
+    closeInspector,
+    isInspectorOpen,
+    viewCenterWorld: () => {
+      const rect = canvas.getBoundingClientRect();
+      return screenToWorld(rect.left + rect.width / 2, rect.top + rect.height / 2);
+    },
+    setSpeed: (n) => {
+      speedSlider.value = String(n);
+      speedSlider.dispatchEvent(new Event('input'));
+    },
+    getSpeed: () => stepsPerFrame,
+    setLysin: (on) => { if (on !== lysinActive) toggleLysin(); },
+    isGameMode: () => gameMode,
+    toggleGame,
+  });
+}
+if (tutorialBtn) tutorialBtn.addEventListener('click', launchTutorial);
+if (tutorialBtn2) tutorialBtn2.addEventListener('click', launchTutorial);
 
 // ── Render loop ─────────────────────────────────────────────────────────────
 function loop(): void {

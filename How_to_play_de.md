@@ -52,6 +52,29 @@ Shortcuts-Karte, Atom-Wörterbuch).
 2. Die Sim startet mit einer geseedeten Soup. Beobachte, wie Protozellen
    von selbst entstehen — oder öffne das **Controls**-Panel (`M` /
    ☰-Button), um einzugreifen.
+3. Zum ersten Mal hier? Klicke den **?**-Button (oben rechts) oder
+   **🎓 Tutorial** im Panel — eine interaktive Tour, die jedes Feature
+   live vorführt: Pausieren, Selektieren, eine echte Protozelle einfügen,
+   Lysin, Spielmodus.
+
+### Die Anleitung im Spiel
+
+Dieselbe Dokumentation ist direkt in der App eingebaut:
+
+- `M` (oder der ☰-Button) öffnet das **Controls**-Panel: jede
+  Sektions-Karte enthält Inline-Hinweise, und die **Shortcuts**-Karte
+  listet alle Tastenkürzel.
+- Der Button **⚗️ Custom chemistry editor** (Lab-Sektion des Panels)
+  öffnet das Lab; der Tab **📖 Dictionary** erklärt dort jedes Atom in
+  einfachem Englisch — eigene Custom-Atoms eingeschlossen.
+
+### Die Physik lernen
+
+Neu bei künstlichen Chemien? [Organic Builder](https://github.com/rubo77/OrganicBuilder)
+ist ein kostenloses Schritt-für-Schritt-Tutorial, das genau dieses
+Atom/Zustand/Bindungs-Reaktionsmodell über kleine spielbare Challenges
+beibringt — der schnellste Weg zu verstehen, was in Evolooms Soup
+passiert.
 
 ## Ansichten
 

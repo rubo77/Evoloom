@@ -58,8 +58,15 @@ const camera = {
   y: (GRID_H - VIEW_H / fitZoom) / 2,
   zoom: fitZoom,
 };
-const MIN_ZOOM = fitZoom * 0.5;
+// The arena always fills the viewport — zooming out past fit would
+// show empty margin around the grid.
+const MIN_ZOOM = fitZoom;
 const MAX_ZOOM = 6;
+
+function centerCamera(): void {
+  camera.x = (GRID_W - VIEW_W / camera.zoom) / 2;
+  camera.y = (GRID_H - VIEW_H / camera.zoom) / 2;
+}
 
 // Mouse interactivity — behavior depends on brushMode (declared later but
 // referenced via closure that reads the mutable variable each event).
@@ -190,9 +197,14 @@ canvas.addEventListener('wheel', (e) => {
   const worldY = c.y / camera.zoom + camera.y;
   const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
   const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, camera.zoom * factor));
-  camera.x = worldX - c.x / newZoom;
-  camera.y = worldY - c.y / newZoom;
-  camera.zoom = newZoom;
+  if (newZoom <= MIN_ZOOM) {
+    camera.zoom = MIN_ZOOM;
+    centerCamera();
+  } else {
+    camera.x = worldX - c.x / newZoom;
+    camera.y = worldY - c.y / newZoom;
+    camera.zoom = newZoom;
+  }
 }, { passive: false });
 
 // ── Touch handlers — mobile support ───────────────────────────────────────
@@ -263,11 +275,16 @@ canvas.addEventListener('touchmove', (e: TouchEvent) => {
     if (pinchStartDist > 0 && newDist > 0) {
       const scale = newDist / pinchStartDist;
       const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, pinchStartZoom * scale));
-      const worldX = pinchStartMidX / pinchStartZoom + pinchStartCamX;
-      const worldY = pinchStartMidY / pinchStartZoom + pinchStartCamY;
-      camera.x = worldX - newMidCanvas.x / newZoom;
-      camera.y = worldY - newMidCanvas.y / newZoom;
-      camera.zoom = newZoom;
+      if (newZoom <= MIN_ZOOM) {
+        camera.zoom = MIN_ZOOM;
+        centerCamera();
+      } else {
+        const worldX = pinchStartMidX / pinchStartZoom + pinchStartCamX;
+        const worldY = pinchStartMidY / pinchStartZoom + pinchStartCamY;
+        camera.x = worldX - newMidCanvas.x / newZoom;
+        camera.y = worldY - newMidCanvas.y / newZoom;
+        camera.zoom = newZoom;
+      }
     }
   } else if (activeGesture === 'single' && e.touches.length === 1 && dragging) {
     const t = e.touches[0];

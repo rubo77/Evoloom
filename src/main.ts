@@ -542,6 +542,9 @@ function setBrush(next: Brush): void {
   soupBrushBtn.classList.toggle('active', brushMode === 'soup');
   waterBrushBtn.classList.toggle('active', brushMode === 'water');
   selectBtn.classList.toggle('active', brushMode === 'select');
+  // ON/OFF suffix in the label so users see the button toggles back to pan
+  soupBrushBtn.querySelector('.brush-state')!.textContent = brushMode === 'soup' ? 'ON' : 'OFF';
+  waterBrushBtn.querySelector('.brush-state')!.textContent = brushMode === 'water' ? 'ON' : 'OFF';
   canvas.style.cursor = brushMode === 'pan' ? 'grab' : 'crosshair';
   // Leaving select mode → drop any current selection so the halo disappears.
   if (prev === 'select' && brushMode !== 'select') send({ type: 'deselectAll' });

@@ -196,13 +196,16 @@ const STEPS: Step[] = [
     task: (_d, saw) => saw('paintSoup'),
     html: `<span class="tutorial-task">TASK — press <kbd>B</kbd> for the
       soup brush, then <b>drag on the canvas</b> to seed free atoms.</span>
-      <br><br>More atoms = more reactions = faster evolution.`,
+      <br><br>More atoms = more reactions = faster evolution. Press
+      <kbd>B</kbd> again to switch the brush off and get back to panning —
+      the button label shows ON/OFF.`,
   },
   {
     title: 'Task: drop some water',
     task: (_d, saw) => saw('paintWater'),
     html: `<span class="tutorial-task">TASK — press <kbd>W</kbd> and click
-      on the canvas to drop water.</span><br><br>Droplets are held by
+      on the canvas to drop water.</span> Press <kbd>W</kbd> again to
+      switch it off.<br><br>Droplets are held by
       surface tension and fuse on contact. <kbd>C</kbd> clears all water.
       With <b>hydrolysis</b> (<kbd>H</kbd>) on, water actively cleaves
       bonds — but live cells are protected while their membrane holds.`,

@@ -1,6 +1,6 @@
-# Primordium — Manual
+# Evoloom — Manual
 
-Primordium is an artificial chemistry: a 2D world filled with thousands
+Evoloom is an artificial chemistry: a 2D world filled with thousands
 of atoms drifting in Brownian motion. Every atom has a **type**
 (`a`–`f`, `w`, `p`), a numeric **state**, and can form **bonds** with
 neighbors. Whenever atoms bump into each other, a small table of

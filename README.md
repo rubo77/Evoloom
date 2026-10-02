@@ -1,4 +1,4 @@
-# Primordium
+# Evoloom
 
 A high-performance fork of Tim Hutton's **Squirm3** artificial-life system,
 with a microbe-steering game mode, water/soup brushes, surface-tension

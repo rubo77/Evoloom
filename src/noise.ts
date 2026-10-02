@@ -1,4 +1,4 @@
-// Noise injection + event log for Primordium.
+// Noise injection + event log for Evoloom.
 // All primitive-level noise sources land here so the chemistry/grid stay
 // clean and the event log has a single producer. Three sources ship in v1:
 //   • copy misfire — perturb a product after a reaction fires

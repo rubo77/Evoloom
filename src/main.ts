@@ -1,4 +1,4 @@
-// Primordium — main thread.
+// Evoloom — main thread.
 // Copyright (C) 2026 David Castro
 // Based on Squirm3 by Tim Hutton (2007), https://github.com/timhutton/squirm3
 //
@@ -444,7 +444,7 @@ function logStatus(msg: string): void {
     statusFlashTimer = null;
   }, 600);
   // Also mirror to console so power users can scroll the history.
-  console.log('[primordium]', msg);
+  console.log('[EVOLOOM]', msg);
 }
 
 // ── UI buttons ───────────────────────────────────────────────────────────────
@@ -741,7 +741,7 @@ function toggleRecording(): void {
     const blob = new Blob(recChunks, { type: mime });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
-    a.href = url; a.download = `primordium-${Date.now()}.${ext}`; a.click();
+    a.href = url; a.download = `evoloom-${Date.now()}.${ext}`; a.click();
     setTimeout(() => URL.revokeObjectURL(url), 10_000);
   };
   mediaRecorder.start(200);
@@ -810,7 +810,7 @@ function onSaveState(msg: SaveStateMsg): void {
   const job = _saveReasons.shift() ?? { reason: 'download' as SaveReason };
   if (job.reason === 'download') {
     const tag  = `iter${msg.state.iterations}-seed${msg.state.seed}`;
-    const suggested = `primordium-${tag}`;
+    const suggested = `evoloom-${tag}`;
     const raw = window.prompt('Name your save file (no extension):', suggested);
     if (raw === null) {
       logStatus('Save cancelled');
@@ -914,7 +914,7 @@ selectionFileInput.addEventListener('change', async () => {
     const text = await file.text();
     const sel = JSON.parse(text) as SelectionState;
     if (sel.magic !== 'primordium-selection' || !Array.isArray(sel.cellX)) {
-      logStatus(`Not a Primordium selection file (${file.name})`);
+      logStatus(`Not an Evoloom selection file (${file.name})`);
       selectionFileInput.value = '';
       return;
     }
@@ -1046,7 +1046,7 @@ function downloadSelection(): void {
     logStatus('No selection to download yet — click Open inspector first');
     return;
   }
-  const suggested = `primordium-selection-${lastSelection.atomCount}atoms`;
+  const suggested = `evoloom-selection-${lastSelection.atomCount}atoms`;
   const raw = window.prompt('Name your selection file (no extension):', suggested);
   if (raw === null) { logStatus('Selection save cancelled'); return; }
   let name = raw.trim().replace(/[\\/]/g, '_').replace(/\.json$/i, '');
@@ -2029,7 +2029,7 @@ loadFileInput.addEventListener('change', async () => {
     const text = await file.text();
     const state = JSON.parse(text) as SaveState;
     if (state.magic !== 'primordium-save') {
-      logStatus(`Load failed: not a Primordium save file (${file.name})`);
+      logStatus(`Load failed: not an Evoloom save file (${file.name})`);
       loadFileInput.value = '';
       return;
     }
@@ -2122,7 +2122,7 @@ function downloadCSV(): void {
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
   a.href = url;
-  a.download = `primordium-stats-${Date.now()}.csv`;
+  a.download = `evoloom-stats-${Date.now()}.csv`;
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 10_000);
   logStatus(`Exported ${statsRows.length.toLocaleString()} stats rows to CSV`);
@@ -2279,7 +2279,7 @@ function downloadEventsCSV(): void {
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
     a.href = url;
-    a.download = `primordium-events-${Date.now()}.csv`;
+    a.download = `evoloom-events-${Date.now()}.csv`;
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 10_000);
     logStatus(`Exported ${eventRows.length.toLocaleString()} events · ${eventTotalEverFired.toLocaleString()} fired total · ${eventDroppedTotal} dropped`);

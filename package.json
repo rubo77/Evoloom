@@ -1,7 +1,7 @@
 {
-  "name": "squirm3-pro",
+  "name": "evoloom",
   "version": "2.0.0",
-  "description": "Primordium — Squirm3-based artificial life with microbe-steering game mode, surface-tension water physics, and WebGPU rendering.",
+  "description": "Evoloom — Squirm3-based artificial life with microbe-steering game mode, surface-tension water physics, and WebGPU rendering.",
   "author": "David Castro",
   "license": "GPL-3.0-or-later",
   "homepage": "https://github.com/timhutton/squirm3",

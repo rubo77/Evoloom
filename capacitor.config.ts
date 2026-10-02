@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'net.transcendiant.primordium',
-  appName: 'Primordium',
+  appName: 'Evoloom',
   webDir: 'www',
   android: {
     allowMixedContent: false,

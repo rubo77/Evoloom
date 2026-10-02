@@ -1,4 +1,4 @@
-// Primordium — physics worker.
+// Evoloom — physics worker.
 // Copyright (C) 2026 David Castro · GPL v3 (see LICENSE)
 // Squirm3 chemistry/physics by Tim Hutton (2007), GPL v3.
 //
@@ -667,7 +667,7 @@ function buildSaveState(): SaveState {
 // Restore a previously saved state. Returns null on success, or an error
 // message string on failure. Loading rebuilds the grid from scratch.
 function loadSaveState(s: SaveState): string | null {
-  if (s.magic !== 'primordium-save') return 'Not a Primordium save file';
+  if (s.magic !== 'primordium-save') return 'Not an Evoloom save file';
   if (s.version !== 1) return `Unsupported save version: ${s.version}`;
   if (!Array.isArray(s.cellX)) return 'Corrupt save: missing cells';
 

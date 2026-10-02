@@ -628,7 +628,7 @@ export function draw2DClassic(
   const z = camera.zoom;
   ctx.setTransform(z, 0, 0, z, -camera.x * z, -camera.y * z);
 
-  // Faint water droplet hint — Primordium-only feature, kept very subtle so
+  // Faint water droplet hint — Evoloom-only feature, kept very subtle so
   // the classic look stays close to Hutton's. Set to 0 alpha if you want
   // perfect Hutton fidelity.
   const dropCount = droplets[0] | 0;

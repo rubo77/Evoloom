@@ -26,3 +26,9 @@ in How_to_play.md intro: explain how the simulation works and what is special ab
 
 ## 26-10-02
 add a German How_to_play_de.md file.
+
+## 26-10-02
+search online for a simple explanation of Squirm3.
+
+## 26-10-02 03:25
+rename primordium to Evoloom.

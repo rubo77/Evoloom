@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Serves Primordium locally and opens it in the default browser.
+# Serves Evoloom locally and opens it in the default browser.
 # Usage: bash run.sh   (or PORT=8080 bash run.sh)
 set -euo pipefail
 cd "$(dirname "$0")"

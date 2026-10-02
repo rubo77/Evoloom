@@ -1,6 +1,6 @@
-# Primordium — Anleitung
+# Evoloom — Anleitung
 
-Primordium ist eine künstliche Chemie: eine 2D-Welt voller Tausender
+Evoloom ist eine künstliche Chemie: eine 2D-Welt voller Tausender
 Atome, die in Brownscher Bewegung umherdriften. Jedes Atom hat einen
 **Typ** (`a`–`f`, `w`, `p`), einen numerischen **Zustand** und kann
 **Bindungen** mit Nachbarn eingehen. Wann immer Atome aufeinandertreffen,

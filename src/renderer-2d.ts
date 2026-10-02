@@ -10,6 +10,7 @@ import { STRIDE, unpackType, unpackState } from './snapshot';
 
 // ── Visual constants ────────────────────────────────────────────────────────
 const COLORS: Record<string, string> = {
+  a: '#e8d68a',
   e: '#ff3333', f: '#33ff33', b: '#888888', c: '#00dddd',
   d: '#3366ff', p: '#ff7700', w: '#66ccff',
 };
@@ -22,7 +23,7 @@ export function setEducationalAtomColor(type: string, hex: string): void {
 }
 
 const LEGEND: { color: string; label: string; isLine?: boolean }[] = [
-  { color: '#c8a800', label: 'a  membrane (bond line)', isLine: true },
+  { color: '#c8a800', label: 'a  membrane unit' },
   { color: '#888888', label: 'b  genome base' },
   { color: '#00dddd', label: 'c  genome base' },
   { color: '#3366ff', label: 'd  enzyme (mid-walk = bouncing)' },
@@ -525,6 +526,26 @@ export function draw2D(
       ctx.lineTo(_displayX[bj] * scale, _displayY[bj] * scale);
     }
     ctx.stroke();
+  }
+
+  // Membrane 'a' atoms as full-size pale-yellow translucent circles sitting
+  // under the bond lines — each unit is identifiable without turning the
+  // membrane into a string of saturated beads. Predator membranes get the
+  // same treatment in pale red, matching their chains.
+  if (!bacteriaView) {
+    const dotR = r;
+    for (const [color, wantPredator] of [['rgba(232,214,138,0.20)', false], ['rgba(226,118,90,0.20)', true]] as const) {
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      for (let i = 0; i < atomCount; i++) {
+        const flags = atoms[i * STRIDE + 3] | 0;
+        if (!(flags & 4) || ((flags & 2) !== 0) !== wantPredator) continue;
+        const px = _displayX[i] * scale, py = _displayY[i] * scale;
+        ctx.moveTo(px + dotR, py);
+        ctx.arc(px, py, dotR, 0, Math.PI * 2);
+      }
+      ctx.fill();
+    }
   }
 
   // ── Active non-membrane atoms (organelles/colored particles) ──────────────

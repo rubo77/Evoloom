@@ -538,10 +538,28 @@ export function drawGPU(
     const o = i * STRIDE;
     const flags = atoms[o + 3] | 0;
     const isMembrane = (flags & 4) !== 0;
-    if (isMembrane) continue;
+    const px = _displayX[i], py = _displayY[i];
+    if (isMembrane) {
+      // Educational only: membrane 'a' atoms get full-size pale, strongly
+      // translucent circles so each unit is identifiable — the smoothed
+      // loop outline alone would hide the real atom positions. The
+      // microscope keeps its clean DIC look where membranes are outlines.
+      if (bacteriaView) continue;
+      const so = pCount * 8;
+      const predator = (flags & 2) !== 0;
+      _particleStage[so + 0] = px;
+      _particleStage[so + 1] = py;
+      _particleStage[so + 2] = r;
+      _particleStage[so + 3] = 0.0; // hard disc
+      _particleStage[so + 4] = predator ? 0.886 : 0.910;
+      _particleStage[so + 5] = predator ? 0.463 : 0.839;
+      _particleStage[so + 6] = predator ? 0.353 : 0.541;
+      _particleStage[so + 7] = 0.20;
+      pCount++;
+      continue;
+    }
     const state = unpackState(atoms[o + 2]);
     const type  = unpackType(atoms[o + 2]);
-    const px = _displayX[i], py = _displayY[i];
     // Water atoms ('w') always render via the soup path regardless of
     // state. Spent water (state=1) is the same visual as fresh water
     // — it's the same molecule, just chemically used. Without this
@@ -908,6 +926,7 @@ function colorFor(type: string): [number, number, number] {
     case 'f': return [0.2, 1.0, 0.2];
     case 'b': return [0.533, 0.533, 0.533];
     case 'c': return [0.0, 0.867, 0.867];
+    case 'a': return [0.910, 0.839, 0.541];
     case 'd': return [0.2, 0.4, 1.0];
     case 'p': return [1.0, 0.467, 0.0];
     case 'w': return [0.4, 0.8, 1.0];

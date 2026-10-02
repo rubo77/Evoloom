@@ -23,3 +23,6 @@ ok, staying with the name Primordium. The built-in manual should be extracted as
 
 ## 26-10-02
 in How_to_play.md intro: explain how the simulation works and what is special about it; the Squirm3 reference is pointless since visitors do not know it.
+
+## 26-10-02
+add a German How_to_play_de.md file.

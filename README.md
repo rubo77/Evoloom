@@ -5,7 +5,8 @@ with a microbe-steering game mode, water/soup brushes, surface-tension
 droplet physics, and WebGPU rendering.
 
 See [How_to_play.md](./How_to_play.md) for the full manual (controls,
-play mode, atom dictionary, shortcuts).
+play mode, atom dictionary, shortcuts) — deutsche Version:
+[How_to_play_de.md](./How_to_play_de.md).
 
 ## Credits
 

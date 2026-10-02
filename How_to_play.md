@@ -48,8 +48,11 @@ atom dictionary).
 2. The sim starts with a seeded soup. Watch protocells emerge on their
    own — or open the **Controls** panel (`M` / ☰ button) to intervene.
 3. First time? Click the **?** button (top right) or **🎓 Tutorial** in
-   the panel — an interactive tour that demos every feature live:
-   pausing, selecting, pasting a real protocell, lysin, game mode.
+   the panel — a guided tour with real tasks on the field: it only
+   advances once you have paused the sim, selected atoms, opened the
+   inspector, painted soup and water, released lysin and entered play
+   mode. A scripted demo pastes a real protocell mid-tour, and the tour
+   ends inside the game — you can just keep steering.
 
 ### The manual in-game
 

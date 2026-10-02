@@ -53,9 +53,12 @@ Shortcuts-Karte, Atom-Wörterbuch).
    von selbst entstehen — oder öffne das **Controls**-Panel (`M` /
    ☰-Button), um einzugreifen.
 3. Zum ersten Mal hier? Klicke den **?**-Button (oben rechts) oder
-   **🎓 Tutorial** im Panel — eine interaktive Tour, die jedes Feature
-   live vorführt: Pausieren, Selektieren, eine echte Protozelle einfügen,
-   Lysin, Spielmodus.
+   **🎓 Tutorial** im Panel — eine geführte Tour mit echten Aufgaben auf
+   dem Spielfeld: Sie geht erst weiter, wenn du die Sim pausiert, Atome
+   selektiert, den Inspektor geöffnet, Soup und Wasser gemalt, Lysin
+   freigesetzt und den Spielmodus gestartet hast. Mittendrin fügt ein
+   Skript eine echte Protozelle ein — und die Tour endet mitten im
+   Spiel, du kannst direkt weitersteuern.
 
 ### Die Anleitung im Spiel
 

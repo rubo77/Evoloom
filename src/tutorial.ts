@@ -1,9 +1,12 @@
-// Evoloom — interactive step-by-step tutorial.
+// Evoloom — interactive guided tutorial.
 //
-// A coach overlay that explains the artificial chemistry while driving the
-// live simulation through scripted demos: pausing, selecting, painting,
-// pasting a hand-built protocell, lysin, game mode. Navigation via
-// Next/Back buttons, ←/→ keys, progress dots; Esc or Skip leaves anytime.
+// A coach overlay mixing explanation steps with task steps that only advance
+// once the player actually performs the action on the field (pause, select,
+// paint, lysin, game mode…). Scripted demos paste a hand-built protocell and
+// drive the live sim via the normal ControlMsg channel.
+//
+// Navigation: Next/Back buttons, ←/→ keys, progress dots; Esc or "Skip tour"
+// leaves anytime and restores the pause/speed state.
 
 import type { ControlMsg, SelectionState } from './snapshot';
 import { RADIUS } from './cell';
@@ -14,7 +17,7 @@ export interface TutorialDeps {
   isPanelOpen(): boolean;
   openPanel(): void;
   closePanel(): void;
-  /** Toggle-style brush activation — safe to call with the desired mode. */
+  /** Toggle-style brush activation — the adapter in main.ts is idempotent. */
   setBrush(brush: 'pan' | 'soup' | 'water' | 'select'): void;
   setPaused(paused: boolean): void;
   isPaused(): boolean;
@@ -36,6 +39,26 @@ interface Step {
   spotlight?: string;
   enter?(d: TutorialDeps): void;
   exit?(d: TutorialDeps): void;
+  /**
+   * Task gate: while set, the step only completes once this returns true.
+   * `saw(type)` reports control messages observed after the step's enter
+   * hooks ran (tutorial-injected ones are already in the baseline).
+   */
+  task?(d: TutorialDeps, saw: (type: ControlMsg['type']) => boolean): boolean;
+}
+
+// ── Control-message observation ─────────────────────────────────────────────
+// main.ts calls observeControl() inside its send() choke point so user
+// actions on canvas/panel are visible to task conditions.
+const counts: Partial<Record<ControlMsg['type'], number>> = {};
+let baseline: Partial<Record<ControlMsg['type'], number>> = {};
+
+export function observeControl(msg: ControlMsg): void {
+  counts[msg.type] = (counts[msg.type] ?? 0) + 1;
+}
+
+function sawFactory(): (type: ControlMsg['type']) => boolean {
+  return (type) => (counts[type] ?? 0) > (baseline[type] ?? 0);
 }
 
 // ── Demo protocell ──────────────────────────────────────────────────────────
@@ -93,8 +116,8 @@ const STEPS: Step[] = [
     html: `Evoloom is an <b>artificial chemistry</b>: thousands of atoms drift
       through a 2D soup, react with their neighbors and form bonds — and out
       of that, membrane-enclosed cells emerge that copy their genome and
-      divide.<br><br>This tour walks you through it <b>live</b>, with real
-      demos running in the simulation. <b>Next →</b> advances,
+      divide.<br><br>This is a <b>guided tour</b>: some steps ask you to do
+      things on the field — the tour only continues once you've done them.
       <b>Esc</b> or <b>Skip tour</b> leaves anytime.`,
   },
   {
@@ -106,43 +129,45 @@ const STEPS: Step[] = [
       is.<br><br>Bonds build structures: chains, loops, cells.`,
   },
   {
-    title: 'Camera & views',
-    html: `<b>Drag</b> to pan, <b>scroll</b> to zoom. Press <kbd>V</kbd> to
-      cycle render modes: <b>Educational</b> (legend + bonds + membranes),
-      <b>Microscope</b> and <b>Classic</b> (the original Squirm3
-      look).<br><br>Try it — press <kbd>V</kbd> once or twice now.`,
+    title: 'Task: open the Controls panel',
+    spotlight: '#menu-toggle',
+    task: (d) => d.isPanelOpen(),
+    html: `Everything is controlled from the <b>Controls</b> panel.<br><br>
+      <span class="tutorial-task">TASK — press <kbd>M</kbd> or click the
+      ☰ <b>Controls</b> button (top right).</span>`,
   },
   {
-    title: 'The Controls panel',
+    title: 'Tour of the panel',
     spotlight: '#control-panel',
-    enter: (d) => d.openPanel(),
-    html: `Everything lives in the <b>Controls</b> panel (<kbd>M</kbd> or
-      the ☰ button): playback, brushes, world seeding, physics sliders,
-      lab tools, archive/export.<br><br>The <b>Shortcuts</b> card at the
-      bottom lists every keybind.`,
+    html: `Playback, brushes, world seeding, physics sliders, lab tools and
+      archive/export — grouped in cards.<br><br>The <b>Shortcuts</b> card at
+      the bottom lists every keybind. You can close the panel with
+      <kbd>M</kbd> whenever you like.`,
   },
   {
-    title: 'Pause and look closely',
-    enter: (d) => { d.closePanel(); d.setPaused(true); },
-    html: `The sim is now <b>paused</b> (<kbd>Space</kbd> toggles). Zoom
-      into any cluster — each circle shows its <b>type letter + state
-      number</b>.<br><br>Watch the colors: each atom type has its own, and
-      the number after it is the current state.`,
+    title: 'Task: pause the simulation',
+    task: (d) => d.isPaused(),
+    exit: (d) => d.closePanel(),
+    html: `<span class="tutorial-task">TASK — press <kbd>Space</kbd> (or the
+      Pause button) to freeze the sim.</span><br><br>Paused, every circle
+      shows its <b>type letter + state number</b> — zoom in and look.`,
   },
   {
-    title: 'Select & inspect atoms',
-    enter: (d) => {
-      d.setBrush('select');
-      const c = d.viewCenterWorld();
-      d.send({ type: 'selectAt', x: c.x, y: c.y, radius: 160 });
-      d.openInspector();
-    },
-    exit: (d) => { if (d.isInspectorOpen()) d.closeInspector(); d.setBrush('pan'); },
-    html: `I just selected the atoms at the view center and opened the
-      <b>inspector</b> (<kbd>I</kbd>) — a frozen, atom-level view of the
-      selection.<br><br>In <b>Edit</b> mode you can add atoms, bond them or
-      delete them; <b>Replace</b> swaps a type in the whole sim. Close the
-      inspector or press Next.`,
+    title: 'Task: select some atoms',
+    task: (_d, saw) => saw('selectAt') || saw('selectBox'),
+    html: `<span class="tutorial-task">TASK — press <kbd>M</kbd>, hit
+      <b>🎯 Select atom</b>, then <b>click an atom</b> or drag a box around
+      several.</span><br><br>A halo marks the selection. The <kbd>Del</kbd>
+      key would delete it — don't worry, you can try that later.`,
+  },
+  {
+    title: 'Task: open the inspector',
+    task: (d) => d.isInspectorOpen(),
+    exit: (d) => { if (d.isInspectorOpen()) d.closeInspector(); },
+    html: `<span class="tutorial-task">TASK — press <kbd>I</kbd> to open the
+      <b>inspector</b>: a frozen atom-level view of your selection.</span>
+      <br><br>In <b>Edit</b> mode you could add, bond or delete atoms —
+      for now just look, then continue.`,
   },
   {
     title: 'A real protocell',
@@ -152,11 +177,10 @@ const STEPS: Step[] = [
       d.send({ type: 'pasteSelection', x: c.x, y: c.y, selection: buildDemoCell() });
       d.logStatus('Tutorial: pasted a hand-built protocell at view center');
     },
-    html: `I just dropped a <b>minimal protocell</b> into the view: a
-      closed ring of <code>a</code> atoms (the membrane) enclosing a gene
-      strand <code>e-b-b-a-c-b-d-f</code>.<br><br>Nothing in the engine
-      knows the word "cell" — this is just a pattern of bonded atoms. Find
-      it at the center of your view.`,
+    html: `I just dropped a <b>minimal protocell</b> into the center of your
+      view: a closed ring of <code>a</code> atoms (the membrane) enclosing a
+      gene strand <code>e-b-b-a-c-b-d-f</code>.<br><br>Nothing in the engine
+      knows the word "cell" — this is just a pattern of bonded atoms.`,
   },
   {
     title: 'Genome copying & division',
@@ -168,37 +192,29 @@ const STEPS: Step[] = [
       replication, driven only by local reaction rules.`,
   },
   {
-    title: 'Paint atoms yourself',
-    enter: (d) => {
-      d.setBrush('soup');
-      const c = d.viewCenterWorld();
-      d.send({ type: 'paintSoup', x: c.x, y: c.y, radius: 120, count: 40 });
-    },
-    exit: (d) => d.setBrush('pan'),
-    html: `The <b>soup brush</b> (<kbd>B</kbd>) is active — I painted a
-      burst of free atoms. <b>Drag on the canvas</b> now to paint your own;
-      membranes absorb free <code>a</code> atoms when stretched.<br><br>
-      More atoms = more reactions = faster evolution.`,
+    title: 'Task: paint atoms',
+    task: (_d, saw) => saw('paintSoup'),
+    html: `<span class="tutorial-task">TASK — press <kbd>B</kbd> for the
+      soup brush, then <b>drag on the canvas</b> to seed free atoms.</span>
+      <br><br>More atoms = more reactions = faster evolution.`,
   },
   {
-    title: 'Water & hydrolysis',
-    enter: (d) => {
-      const c = d.viewCenterWorld();
-      d.send({ type: 'paintWater', x: c.x, y: c.y, radius: 60 });
-    },
-    html: `I dropped a <b>water droplet</b> (<kbd>W</kbd> paints,
-      <kbd>C</kbd> clears). Fresh water can cleave bonds — with
-      <b>hydrolysis</b> (<kbd>H</kbd>) on, water actively decomposes
-      structures. Live cells are protected while their membrane holds.`,
+    title: 'Task: drop some water',
+    task: (_d, saw) => saw('paintWater'),
+    html: `<span class="tutorial-task">TASK — press <kbd>W</kbd> and click
+      on the canvas to drop water.</span><br><br>Droplets are held by
+      surface tension and fuse on contact. <kbd>C</kbd> clears all water.
+      With <b>hydrolysis</b> (<kbd>H</kbd>) on, water actively cleaves
+      bonds — but live cells are protected while their membrane holds.`,
   },
   {
-    title: 'Lysin — the predator molecule',
-    enter: (d) => d.setLysin(true),
+    title: 'Task: release the lysin',
+    task: (_d, saw) => saw('toggleLysin'),
     exit: (d) => d.setLysin(false),
-    html: `I seeded <b>lysin</b> (<code>p</code>) — a catalyst that eats
-      membrane <code>a-a</code> bonds and is never consumed. Watch
-      membranes dissolve on contact.<br><br>This is how cells die in the
-      soup: breached membrane, spilled genome.`,
+    html: `<span class="tutorial-task">TASK — press <kbd>P</kbd> to seed
+      <b>lysin</b> (<code>p</code> atoms).</span><br><br>It's a catalyst
+      that eats membrane <code>a-a</code> bonds and is never consumed —
+      membranes dissolve on contact. This is how cells die in the soup.`,
   },
   {
     title: 'Noise & evolution',
@@ -210,41 +226,24 @@ const STEPS: Step[] = [
       atoms.<br><br>That's real evolution: variation + selection.`,
   },
   {
-    title: 'Play mode — steer a microbe',
-    enter: (d) => { d.closePanel(); if (!d.isGameMode()) d.toggleGame(); },
-    exit: (d) => { if (d.isGameMode()) d.toggleGame(); },
-    html: `<b>Game mode</b> (<kbd>G</kbd>) is on: the green microbe is
-      yours. Steer its Brownian drift with <b>WASD</b>.<br><br>You win when
-      no enemy cell survives ~5 s with a closed membrane; you lose if all
-      your cells are lysed. Try steering for a moment!`,
-  },
-  {
-    title: 'Save, load, freeze',
-    html: `<kbd>[</kbd> / <kbd>]</kbd> quicksave & quickload.
-      <b>Save</b> exports the full state as JSON — reloading is
-      bit-identical, PRNG cursor included.<br><br><kbd>F</kbd>
-      <b>freezes</b>: pause + zero noise + quicksave — "I see something
-      interesting, stop everything." Sample saves live in
-      <code>samples/</code>.`,
-  },
-  {
-    title: 'Build your own chemistry',
-    spotlight: '#lab-open-btn',
-    enter: (d) => d.openPanel(),
-    html: `The <b>⚗️ Custom chemistry editor</b> lets you define your own
-      atoms and reaction rules — they fire <i>after</i> the built-in
-      chemistry, so the seeded world keeps working.<br><br>Its
-      <b>📖 Dictionary</b> tab explains every atom in plain English.`,
-  },
-  {
-    title: "You're set — go evolve things",
+    title: 'Task: enter play mode',
+    task: (d, saw) => saw('startGame') || d.isGameMode(),
     enter: (d) => d.closePanel(),
-    html: `That was the whole tour. Dig deeper:<br><br>
+    html: `<span class="tutorial-task">TASK — press <kbd>G</kbd> to enter
+      <b>play mode</b>.</span><br><br>The green microbe will be yours:
+      <b>WASD</b> nudges its Brownian drift. You win when no enemy cell
+      survives ~5 s with a closed membrane — you lose if all your cells
+      are lysed.`,
+  },
+  {
+    title: "You're playing now",
+    html: `That was the tour — the world stays in play mode, so
+      <b>keep steering</b> your microbe.<br><br>
       📄 <b>How_to_play.md</b> — the full manual in the repo<br>
       🧪 <a href="https://github.com/rubo77/OrganicBuilder" target="_blank"
-      rel="noopener">Organic Builder</a> — Hutton's own step-by-step
-      tutorial app for this exact reaction model<br><br>
-      Now: crank the noise, seed a cell, and watch what emerges.`,
+      rel="noopener">Organic Builder</a> — a step-by-step tutorial app for
+      this exact reaction model<br><br>
+      Crank the noise, seed a cell, watch what emerges.`,
   },
 ];
 
@@ -255,6 +254,8 @@ let card: HTMLDivElement | null = null;
 let deps: TutorialDeps | null = null;
 let index = 0;
 let active = false;
+let taskDone = false;
+let pollTimer: ReturnType<typeof setInterval> | null = null;
 let savedPaused = false;
 let savedSpeed = 8;
 
@@ -289,22 +290,61 @@ function renderStep(): void {
   const step = STEPS[index];
   const d = deps!;
   if (step.enter) step.enter(d);
+  taskDone = !step.task;
+  // Baseline the observed message counts AFTER enter hooks so scripted
+  // demo sends can't satisfy the task condition.
+  baseline = { ...counts };
   const dots = STEPS.map((_, i) =>
     `<span class="tutorial-dot${i === index ? ' current' : ''}"></span>`).join('');
+  const isLast = index === STEPS.length - 1;
   card!.innerHTML = `
     <div class="tutorial-step-label">Step ${index + 1} / ${STEPS.length}</div>
-    <div class="tutorial-title">${step.title}</div>
+    <div class="tutorial-title">${taskDone ? '' : '☐ '}${step.title}</div>
     <div class="tutorial-body">${step.html}</div>
     <div class="tutorial-nav">
       <button id="tut-prev" ${index === 0 ? 'disabled' : ''}>← Back</button>
       <span class="tutorial-dots">${dots}</span>
       <button id="tut-skip">Skip tour</button>
-      <button id="tut-next">${index === STEPS.length - 1 ? 'Done ✓' : 'Next →'}</button>
+      <button id="tut-next" ${taskDone ? '' : 'disabled'}
+        title="${taskDone ? '' : 'Complete the task to continue'}">
+        ${isLast ? 'Done ✓' : 'Next →'}</button>
     </div>`;
   byId('tut-prev').addEventListener('click', () => goTo(index - 1));
-  byId('tut-next').addEventListener('click', () => goTo(index + 1));
+  byId('tut-next').addEventListener('click', () => {
+    if (taskDone) goTo(index + 1);
+  });
   byId('tut-skip').addEventListener('click', closeTutorial);
   positionSpotlight();
+  if (step.task) startPolling(step);
+}
+
+function startPolling(step: Step): void {
+  stopPolling();
+  pollTimer = setInterval(() => {
+    if (!active || !step.task) return;
+    if (step.task(deps!, sawFactory())) {
+      completeTask();
+    }
+  }, 200);
+}
+
+function completeTask(): void {
+  stopPolling();
+  taskDone = true;
+  const title = card!.querySelector('.tutorial-title');
+  if (title) {
+    title.innerHTML = `✓ ${STEPS[index].title.replace(/^Task: /, '')}`;
+    title.classList.add('tutorial-done');
+  }
+  const next = card!.querySelector('#tut-next') as HTMLButtonElement | null;
+  if (next) { next.disabled = false; next.title = ''; }
+  // Auto-advance shortly after success — unless the user navigated meanwhile.
+  const at = index;
+  setTimeout(() => { if (active && index === at) goTo(at + 1); }, 900);
+}
+
+function stopPolling(): void {
+  if (pollTimer !== null) { clearInterval(pollTimer); pollTimer = null; }
 }
 
 function byId(id: string): HTMLElement {
@@ -329,6 +369,7 @@ function positionSpotlight(): void {
 }
 
 function goTo(next: number): void {
+  stopPolling();
   if (next < 0 || next >= STEPS.length) { closeTutorial(); return; }
   const leaving = STEPS[index];
   if (leaving.exit) leaving.exit(deps!);
@@ -341,7 +382,7 @@ function onKey(e: KeyboardEvent): void {
   if (e.code === 'Escape') {
     e.stopPropagation();
     closeTutorial();
-  } else if (e.code === 'ArrowRight') {
+  } else if (e.code === 'ArrowRight' && taskDone) {
     e.stopPropagation();
     goTo(index + 1);
   } else if (e.code === 'ArrowLeft') {
@@ -352,6 +393,7 @@ function onKey(e: KeyboardEvent): void {
 
 function closeTutorial(): void {
   if (!active) return;
+  stopPolling();
   const leaving = STEPS[index];
   if (leaving.exit) leaving.exit(deps!);
   active = false;
@@ -359,7 +401,8 @@ function closeTutorial(): void {
   window.removeEventListener('resize', positionSpotlight);
   overlay?.remove();
   overlay = spot = card = null;
-  // Restore the world state the tutorial found.
+  // Restore the world state the tutorial found. Play mode entered by the
+  // player stays on — the tour ends inside the game by design.
   deps!.setSpeed(savedSpeed);
   deps!.setPaused(savedPaused);
   if (deps!.isInspectorOpen()) deps!.closeInspector();

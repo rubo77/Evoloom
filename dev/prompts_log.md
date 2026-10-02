@@ -38,3 +38,24 @@ The manual is not really a tutorial. Build a tutorial button that explains every
 
 ## 26-10-02 03:40
 continue.
+
+## 26-10-02 04:10
+The tutorial should not only explain everything, but also let the user
+complete specific tasks on the playfield themselves; it should only
+continue once the correct action has been performed — a guided tutorial
+that explains the game, at the end you can play it.
+
+## 26-10-02 04:35
+The 'a' atoms have no color or are transparent — you can only tell they
+must be there because the bond lines have a kink at that spot. Is that
+intended? If not, make sure they get an unambiguous color.
+
+## 26-10-02 04:50
+The 'a' atom needs a different color: yellow, styled exactly like the
+other letters b, c, d, e, f and the same size — it is currently smaller
+than the other letters.
+
+## 26-10-02 05:00
+Now I get it — the 'a' atoms are the membranes around the "cells"; it
+looks best when they are not balls at all. Let's see how it looks with
+very small dots in the same color as the bonds.

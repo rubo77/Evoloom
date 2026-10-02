@@ -19,7 +19,7 @@ import { setCustomAtomColor as setGPUCustomColor } from './renderer-gpu';
 import { setClassicAtomColor, setEducationalAtomColor } from './renderer-2d';
 import { draw2D, draw2DClassic, drawHUD2D, drawArenaBorder } from './renderer-2d';
 import { initGPU, drawGPU } from './renderer-gpu';
-import { startTutorial } from './tutorial';
+import { startTutorial, observeControl } from './tutorial';
 
 // Big arena (~13× the original area). The canvas itself is viewport-sized;
 // we render only what the camera sees. Pan with mouse drag, zoom with wheel.
@@ -325,7 +325,7 @@ canvas.addEventListener('touchcancel', () => {
 // extra worker.js fetch per session — irrelevant for a sim that runs
 // for minutes/hours.
 const worker = new Worker('dist/worker.js?v=' + Date.now());
-function send(msg: ControlMsg): void { worker.postMessage(msg); }
+function send(msg: ControlMsg): void { observeControl(msg); worker.postMessage(msg); }
 function sendTransfer(msg: ControlMsg, transferables: Transferable[]): void {
   worker.postMessage(msg, transferables);
 }

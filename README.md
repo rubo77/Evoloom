@@ -4,6 +4,9 @@ A high-performance fork of Tim Hutton's **Squirm3** artificial-life system,
 with a microbe-steering game mode, water/soup brushes, surface-tension
 droplet physics, and WebGPU rendering.
 
+See [How_to_play.md](./How_to_play.md) for the full manual (controls,
+play mode, atom dictionary, shortcuts).
+
 ## Credits
 
 - **This fork (Primordium):** David Castro, 2026 — <https://github.com/DavidOrtsac/primordium>

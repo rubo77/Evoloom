@@ -17,3 +17,6 @@ link the original repo and explain how this repo was forked from it — apparent
 
 ## 26-10-02
 shouldn't the original Primordium also be added as a remote and linked in the README?
+
+## 26-10-02
+ok, staying with the name Primordium. The built-in manual should be extracted as How_to_play.md into the repo and linked in the README.

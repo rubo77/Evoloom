@@ -17,16 +17,15 @@ test('a atoms render as visible dots', async ({ page }) => {
   await page.waitForTimeout(2500);
 
   await page.click('#tutorial-btn');
-  // advance to step 6 (select atoms) then perform it so the protocell
+  // advance through the info steps to the select task so the protocell
   // paste step is reached via its own actions
   await page.click('#tut-next'); // soup info
-  await page.click('#tut-next'); // task: open panel
-  await page.keyboard.press('m');
+  await page.click('#tut-next'); // panel tour (opens itself)
   await expect(page.locator('.tutorial-title')).toContainText('Tour of the panel', { timeout: 8000 });
   await page.click('#tut-next'); // task: pause
   await page.keyboard.press(' ');
   await expect(page.locator('.tutorial-title')).toContainText('select some atoms', { timeout: 8000 });
-  await page.keyboard.press('m');
+  await page.keyboard.press('m'); // reopen panel (pause-step exit closed it)
   await page.click('#select-btn');
   await page.mouse.move(300, 200);
   await page.mouse.down();

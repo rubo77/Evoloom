@@ -59,3 +59,8 @@ than the other letters.
 Now I get it — the 'a' atoms are the membranes around the "cells"; it
 looks best when they are not balls at all. Let's see how it looks with
 very small dots in the same color as the bonds.
+
+## 26-10-03 00:40
+In the tutorial, the first step "open the menu bar" is always fulfilled
+immediately and is unnecessary anyway — opening the menu bar is nothing
+one needs to learn separately.

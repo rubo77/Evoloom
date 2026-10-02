@@ -29,12 +29,9 @@ test('guided tutorial gates task steps on real user actions', async ({ page }) =
   await page.click('#tut-next');          // soup info
   await expectStep(page, 'atoms, states, bonds');
 
-  // ── Task: open the Controls panel ──
-  await page.click('#tut-next');
-  await expectStep(page, 'open the Controls panel');
-  await expect(page.locator('#tut-next')).toBeDisabled(); // gated
-  await page.keyboard.press('m');          // user action
-  await expectStep(page, 'Tour of the panel');            // auto-advanced
+  await page.click('#tut-next');          // panel tour (opens itself)
+  await expectStep(page, 'Tour of the panel');
+  await expect(page.locator('#control-panel.open')).toBeVisible();
 
   // ── Task: pause ──
   await page.click('#tut-next');

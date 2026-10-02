@@ -129,20 +129,13 @@ const STEPS: Step[] = [
       is.<br><br>Bonds build structures: chains, loops, cells.`,
   },
   {
-    title: 'Task: open the Controls panel',
-    spotlight: '#menu-toggle',
-    task: (d) => d.isPanelOpen(),
-    html: `Everything is controlled from the <b>Controls</b> panel.<br><br>
-      <span class="tutorial-task">TASK — press <kbd>M</kbd> or click the
-      ☰ <b>Controls</b> button (top right).</span>`,
-  },
-  {
     title: 'Tour of the panel',
     spotlight: '#control-panel',
-    html: `Playback, brushes, world seeding, physics sliders, lab tools and
-      archive/export — grouped in cards.<br><br>The <b>Shortcuts</b> card at
-      the bottom lists every keybind. You can close the panel with
-      <kbd>M</kbd> whenever you like.`,
+    enter: (d) => d.openPanel(),
+    html: `Everything lives in the <b>Controls</b> panel (<kbd>M</kbd> /
+      ☰ button) — playback, brushes, world seeding, physics sliders, lab
+      tools and archive/export, grouped in cards.<br><br>The
+      <b>Shortcuts</b> card at the bottom lists every keybind.`,
   },
   {
     title: 'Task: pause the simulation',

@@ -771,6 +771,28 @@ function toggleGame(): void {
     : 'Play mode OFF — sandbox restored');
 }
 
+// ── HUD hide/show ─────────────────────────────────────────────────────────
+// The stats + legend block in the top-left corner can be collapsed to a
+// small arrow so it never obstructs the sim. The arrow stays in the
+// corner either way and the choice persists across sessions.
+const HUD_STATE_KEY = 'primordium-hud-v1';
+const HUD_SHIFT_CSS = 42; // CSS px to clear the 26px toggle + margins
+const hudToggleBtn = document.getElementById('hud-toggle') as HTMLButtonElement | null;
+let hudVisible = ((): boolean => {
+  try { return localStorage.getItem(HUD_STATE_KEY) !== '0'; } catch { return true; }
+})();
+function applyHudVisibility(): void {
+  if (hudToggleBtn) hudToggleBtn.textContent = hudVisible ? '‹' : '›';
+}
+if (hudToggleBtn) {
+  hudToggleBtn.addEventListener('click', () => {
+    hudVisible = !hudVisible;
+    try { localStorage.setItem(HUD_STATE_KEY, hudVisible ? '1' : '0'); } catch { /* private mode */ }
+    applyHudVisibility();
+  });
+}
+applyHudVisibility();
+
 // ── Win/Lose overlay ───────────────────────────────────────────────────────
 const overlayEl = document.getElementById('game-overlay') as HTMLDivElement;
 const overlayTitle = document.getElementById('game-overlay-title') as HTMLDivElement;
@@ -2812,7 +2834,12 @@ function loop(): void {
         drawArenaBorder(overlayCtx, GRID_W, GRID_H, z);
         overlayCtx.setTransform(1, 0, 0, 1, 0, 0);
       }
-      if (viewMode === 'educational') drawHUD2D(overlayCtx, snap.iterations, snap.atomCount, snap.atoms);
+      if (viewMode === 'educational' && hudVisible) {
+        // Shift is in canvas-internal px — the toggle button is a
+        // fixed CSS size, so scale it by the current display factor.
+        const shift = HUD_SHIFT_CSS * canvas.width / (canvas.clientWidth || canvas.width);
+        drawHUD2D(overlayCtx, snap.iterations, snap.atomCount, snap.atoms, shift);
+      }
     } else if (ctx2d) {
       draw2D(ctx2d, snap.atoms, snap.atomCount, snap.loops, snap.bonds, snap.droplets, bacteriaView, snap.epoch, camera);
       // Arena boundary on the 2D fallback canvas. Skipped in microscope.
@@ -2821,10 +2848,11 @@ function loop(): void {
         ctx2d.setTransform(z, 0, 0, z, -camera.x * z, -camera.y * z);
         drawArenaBorder(ctx2d, GRID_W, GRID_H, z);
       }
-      if (viewMode === 'educational') {
+      if (viewMode === 'educational' && hudVisible) {
         // HUD always in screen space — reset transform first
         ctx2d.setTransform(1, 0, 0, 1, 0, 0);
-        drawHUD2D(ctx2d, snap.iterations, snap.atomCount, snap.atoms);
+        const shift = HUD_SHIFT_CSS * canvas.width / (canvas.clientWidth || canvas.width);
+        drawHUD2D(ctx2d, snap.iterations, snap.atomCount, snap.atoms, shift);
       }
     }
     // Selection halo — draws the yellow ring on whichever surface is

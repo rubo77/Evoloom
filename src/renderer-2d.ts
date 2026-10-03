@@ -763,7 +763,9 @@ export function drawArenaBorder(
   ctx.restore();
 }
 
-export function drawHUD2D(ctx: CanvasRenderingContext2D, iterations: number, atomCount: number, atoms: Float32Array): void {
+export function drawHUD2D(ctx: CanvasRenderingContext2D, iterations: number, atomCount: number, atoms: Float32Array, ox = 0): void {
+  ctx.save();
+  ctx.translate(ox, 0);
   let bonded = 0;
   for (let i = 0; i < atomCount; i++) {
     if ((atoms[i * STRIDE + 3] | 0) & 1) bonded++;
@@ -799,6 +801,7 @@ export function drawHUD2D(ctx: CanvasRenderingContext2D, iterations: number, ato
     ctx.fillStyle = '#dddddd';
     ctx.fillText(label, lx + PAD + SZ + 8, y + SZ - 1);
   });
+  ctx.restore();
 }
 
 // silence unused-warning for Q_STATE in case lint complains

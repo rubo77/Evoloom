@@ -223,6 +223,17 @@
       border-color: var(--border-emph);
       color: var(--text-bright);
     }
+    /* HUD hide/show arrow — top-left corner, toggles the stats/legend
+       block drawn on the overlay canvas. */
+    .hud-toggle {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      width: 26px;
+      height: 26px;
+      font-size: 0.75rem;
+      z-index: 12;
+    }
     /* Active state for the menu toggle when panel is open: subtle gold tint */
     .canvas-tool-btn.active {
       background: rgba(212, 166, 79, 0.16);
@@ -1523,6 +1534,7 @@
       <button id="fs-toggle" class="canvas-tool-btn fs-toggle" aria-label="Toggle fullscreen" title="Fullscreen">⛶</button>
       <button id="tutorial-btn" class="canvas-tool-btn" aria-label="Interactive tutorial" title="Interactive tutorial">?</button>
     </div>
+    <button id="hud-toggle" class="canvas-tool-btn hud-toggle" aria-label="Toggle stats overlay" title="Hide / show stats overlay">‹</button>
     <div id="game-overlay">
       <div id="game-overlay-title"></div>
       <div id="game-overlay-sub"></div>

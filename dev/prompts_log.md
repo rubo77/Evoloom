@@ -137,3 +137,10 @@ In the bottom shortcuts list, remove all shortcuts that already sit on
 the buttons. When the game is started, WASD steering must be explained
 at the bottom (hidden again when the game ends). The new S shortcut on
 the Select button must also be hidden while the game is running.
+
+## 26-10-03 07:30
+Commit this, then work through all points in the TODO: mobile canvas
+full width, right menu not showing fully, hide all shortcuts on
+mobile, hamburger without "Controls", hide fullscreen and tutorial
+buttons outside the menu, and a hide/show option for the top-left
+overlay with a small arrow button. Commit in between each.

@@ -85,6 +85,15 @@ function clampCameraToArena(): void {
 let followIds: Set<number> | null = null;
 const followBtn = document.getElementById('follow-btn') as HTMLButtonElement | null;
 
+function selectedAtomCount(snap: SnapshotMsg | null): number {
+  if (!snap) return 0;
+  let n = 0;
+  for (let i = 0; i < snap.atomCount; i++) {
+    if (((snap.atoms[i * STRIDE + 3] | 0) & 16) !== 0) n++;
+  }
+  return n;
+}
+
 function setFollow(on: boolean): void {
   if (on) {
     const snap = lastSnapshot;
@@ -2723,6 +2732,7 @@ function launchTutorial(): void {
     focusOn: (x, y, r) => focusOn(x, y, r),
     setFollow: (on) => setFollow(on),
     isFollowing: () => followIds !== null,
+    hasSelection: () => selectedAtomCount(lastSnapshot) > 0,
     setSpeed: (n) => {
       speedSlider.value = String(n);
       speedSlider.dispatchEvent(new Event('input'));

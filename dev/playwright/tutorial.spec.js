@@ -56,8 +56,12 @@ test('guided tutorial gates task steps on real user actions', async ({ page }) =
   await expect(page.locator('#tut-next')).toBeDisabled(); // gated
   await page.click('#select-btn');        // toggles back to pan
   await expectStep(page, 'A real protocell');              // demo step
+  await page.waitForTimeout(400);          // follow arms once the paste snapshot lands
+  await expect(page.locator('#follow-btn')).toContainText('ON');
   await page.screenshot({ path: 'test-results/gt-protocell.png' });
 
+  await page.click('#tut-next');          // camera-follow explainer
+  await expectStep(page, 'camera follows');
   await page.click('#tut-next');          // genome copying demo
   await expectStep(page, 'Genome copying');
   await page.waitForTimeout(1200);         // let replication tick a bit

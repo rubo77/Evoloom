@@ -33,6 +33,8 @@ export interface TutorialDeps {
   /** Camera-follow the centroid of the current selection. */
   setFollow(on: boolean): void;
   isFollowing(): boolean;
+  /** True while any atom carries the selection flag. */
+  hasSelection(): boolean;
   setSpeed(n: number): void;
   getSpeed(): number;
   setLysin(on: boolean): void;
@@ -110,11 +112,20 @@ function buildDemoCell(): SelectionState {
   for (let i = 8; i >= 0; i--) { const c = add((i + 1) * D, sy, 'a', S); bond(c, prev); prev = c; }
   bond(prev, memStart);
 
-  // Two free 'd' polymerases inside the cell — the strand's own 'd' is
-  // bonded into the template and can't act as enzyme. Seeding free ones
-  // near the 'e' anchor makes replication start reliably in a fresh soup.
-  add(1.6 * D, 0.6 * D, 'd', 0);
-  add(0.4 * D, -0.6 * D, 'd', 0);
+  // Interior soup — like the seeded cells in initSimple which sit in a
+  // full soup, the demo cell carries free atoms inside its membrane:
+  // 8 'd' polymerases (the strand's own 'd' is bonded into the template
+  // and can't act as enzyme) plus a/b/c/e raw material for the copy.
+  const inner: string[] = [
+    'd', 'a', 'd', 'b', 'a', 'c', 'd', 'a',
+    'd', 'b', 'a', 'd', 'c', 'd', 'e', 'd',
+  ];
+  for (let i = 0; i < inner.length; i++) {
+    const row = i % 2;
+    const x = (0.8 + 1.05 * (i >> 1) + 0.5 * row) * D;
+    const y = (row === 0 ? -0.55 : 0.55) * D;
+    add(x, y, inner[i], 0);
+  }
 
   return {
     magic: 'primordium-selection', version: 1,
@@ -196,7 +207,6 @@ const STEPS: Step[] = [
   {
     title: 'A real protocell',
     enter: (d) => {
-      d.setPaused(false);
       // Clear any leftover selection and slide the camera toward the
       // arena edge so the drop lands in open space, not inside whatever
       // cell the user was inspecting at view center.
@@ -204,22 +214,48 @@ const STEPS: Step[] = [
       d.panTowardEdge();
       const c = d.viewCenterWorld();
       d.send({ type: 'pasteSelection', x: c.x, y: c.y, selection: buildDemoCell() });
+      // Paused so the cell can't drift away before you've looked at it —
+      // and paused rendering labels every atom with type + state.
+      d.setPaused(true);
+      d.focusOn(c.x, c.y, 110);
+      // The paste becomes the selection, but the snapshot carrying it
+      // arrives asynchronously — arm Follow once it lands.
+      const armFollow = () => {
+        if (d.isFollowing()) return;
+        if (d.hasSelection()) { d.setFollow(true); return; }
+        setTimeout(armFollow, 100);
+      };
+      setTimeout(armFollow, 50);
       d.logStatus('Tutorial: pasted a hand-built protocell at view center');
     },
-    html: `I just dropped a <b>minimal protocell</b> into the center of your
-      view: a closed ring of <code>a</code> atoms (the membrane) enclosing a
-      gene strand <code>e-b-b-a-c-b-d-f</code>.<br><br>Nothing in the engine
-      knows the word "cell" — this is just a pattern of bonded atoms.`,
+    html: `I just dropped a <b>minimal protocell</b>, zoomed in on it and
+      paused the sim so it can't drift away: a closed ring of
+      <code>a</code> atoms (the membrane) enclosing a gene strand
+      <code>e-b-b-a-c-b-d-f</code> plus some loose cargo atoms.<br><br>
+      Paused, every atom shows its <b>type letter + state number</b> —
+      look closely. The yellow halo means the drop is <b>selected</b>.`,
+  },
+  {
+    title: 'The camera follows',
+    spotlight: '#follow-btn',
+    enter: (d) => d.openPanel(),
+    html: `See the halo? A selected thing can be <b>tracked</b>: the
+      <b>🎥 Follow</b> button (next to 🎯 Select) is ON now, so the camera
+      keeps your cell centered wherever it drifts.<br><br>To use it
+      yourself: select atoms, then hit <b>Follow</b>. Any pan or zoom
+      hands the camera back to you — and the button greys out while
+      nothing is selected.`,
   },
   {
     title: 'Genome copying & division',
-    enter: (d) => d.setSpeed(24),
-    html: `I sped the sim up — and the paste slipped two <b>free
+    enter: (d) => { d.setPaused(false); d.setSpeed(24); },
+    exit: (d) => d.setFollow(false),
+    html: `Resuming at high speed — watch the <b>free
       <code>d</code> polymerases</b> inside the membrane. When one touches
       the strand start (<code>e</code>), it enters walk state and copies
       the template base by base. Reaching <code>f</code> splits the cell
-      into <b>two daughters</b>.<br><br>Give it a moment — real
-      replication, driven only by local reaction rules.`,
+      into <b>two daughters</b>.<br><br>Follow stays on — the camera
+      rides along. Real replication, driven only by local reaction rules.`,
   },
   {
     title: 'Task: paint atoms',
@@ -442,6 +478,7 @@ function closeTutorial(): void {
   deps!.setSpeed(savedSpeed);
   deps!.setPaused(savedPaused);
   if (deps!.isInspectorOpen()) deps!.closeInspector();
+  deps!.setFollow(false);
   deps!.setBrush('pan');
   deps!.logStatus('Tutorial finished — the soup is yours.');
 }

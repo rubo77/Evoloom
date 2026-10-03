@@ -96,3 +96,11 @@ switch it on yourself (in paused mode).
 When nothing is selected the Follow button must be greyed out, and
 the button must sit next to the Select button. Change that, then
 commit it yourself, then update the plan with only the current todo.
+
+## 26-10-03 04:00
+Implement step 2 (tutorial integration: paste selects the drop,
+interior soup in the demo cell, zoom + pause + camera follow on the
+protocell step, follow explainer step).
+
+## 26-10-03 04:30
+The tutorial window must be slightly transparent.

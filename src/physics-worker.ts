@@ -1175,6 +1175,10 @@ self.onmessage = (e: MessageEvent<unknown>) => {
         const b = created[s.bonds[k + 1]];
         if (a && b) a.bondTo(b);
       }
+      // The pasted atoms become the selection — the halo shows where the
+      // drop landed and makes it inspectable/followable right away.
+      selectedSet.clear();
+      for (const c of created) selectedSet.add(c);
       postSnapshotIfPaused();
       return;
     }

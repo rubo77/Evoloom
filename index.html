@@ -1290,6 +1290,12 @@
         gap: var(--gap-snug);
       }
       .hint-row { display: none; }
+      /* No physical keyboard on touch devices — hide every shortcut
+         hint: the badges on buttons and the shortcuts card. */
+      .kbd-badge, .card--shortcuts, #wasd-hint { display: none !important; }
+      /* Icon-only hamburger — the "Controls" word wastes space and the
+         glyph is universally understood. */
+      #menu-toggle .menu-label { display: none; }
       .inline-sliders { font-size: 0.72rem; }
       .inline-sliders input[type=range] { width: 100px; }
       #game-overlay-title { font-size: 1.7rem; }

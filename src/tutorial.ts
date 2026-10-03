@@ -33,8 +33,6 @@ export interface TutorialDeps {
   /** Camera-follow the centroid of the current selection. */
   setFollow(on: boolean): void;
   isFollowing(): boolean;
-  /** True while any atom carries the selection flag. */
-  hasSelection(): boolean;
   setSpeed(n: number): void;
   getSpeed(): number;
   setLysin(on: boolean): void;
@@ -218,14 +216,6 @@ const STEPS: Step[] = [
       // and paused rendering labels every atom with type + state.
       d.setPaused(true);
       d.focusOn(c.x, c.y, 110);
-      // The paste becomes the selection, but the snapshot carrying it
-      // arrives asynchronously — arm Follow once it lands.
-      const armFollow = () => {
-        if (d.isFollowing()) return;
-        if (d.hasSelection()) { d.setFollow(true); return; }
-        setTimeout(armFollow, 100);
-      };
-      setTimeout(armFollow, 50);
       d.logStatus('Tutorial: pasted a hand-built protocell at view center');
     },
     html: `I just dropped a <b>minimal protocell</b>, zoomed in on it and
@@ -236,15 +226,16 @@ const STEPS: Step[] = [
       look closely. The yellow halo means the drop is <b>selected</b>.`,
   },
   {
-    title: 'The camera follows',
+    title: 'Task: track the cell',
     spotlight: '#follow-btn',
     enter: (d) => d.openPanel(),
-    html: `See the halo? A selected thing can be <b>tracked</b>: the
-      <b>🎥 Follow</b> button (next to 🎯 Select) is ON now, so the camera
-      keeps your cell centered wherever it drifts.<br><br>To use it
-      yourself: select atoms, then hit <b>Follow</b>. Any pan or zoom
-      hands the camera back to you — and the button greys out while
-      nothing is selected.`,
+    task: (d) => d.isFollowing(),
+    html: `See the halo? A selected thing can be <b>tracked</b> — and the
+      drop arrived already selected.<br><br>
+      <span class="tutorial-task">TASK: press <b>🎥 Follow</b> (right next
+      to 🎯 Select). The camera will keep your cell centered wherever it
+      drifts. Any pan or zoom hands the camera back to you, and the
+      button greys out while nothing is selected.</span>`,
   },
   {
     title: 'Genome copying & division',

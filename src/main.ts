@@ -85,15 +85,6 @@ function clampCameraToArena(): void {
 let followIds: Set<number> | null = null;
 const followBtn = document.getElementById('follow-btn') as HTMLButtonElement | null;
 
-function selectedAtomCount(snap: SnapshotMsg | null): number {
-  if (!snap) return 0;
-  let n = 0;
-  for (let i = 0; i < snap.atomCount; i++) {
-    if (((snap.atoms[i * STRIDE + 3] | 0) & 16) !== 0) n++;
-  }
-  return n;
-}
-
 function setFollow(on: boolean): void {
   if (on) {
     const snap = lastSnapshot;
@@ -2732,7 +2723,6 @@ function launchTutorial(): void {
     focusOn: (x, y, r) => focusOn(x, y, r),
     setFollow: (on) => setFollow(on),
     isFollowing: () => followIds !== null,
-    hasSelection: () => selectedAtomCount(lastSnapshot) > 0,
     setSpeed: (n) => {
       speedSlider.value = String(n);
       speedSlider.dispatchEvent(new Event('input'));
@@ -2875,8 +2865,8 @@ function drawSelectionHalo(snap: SnapshotMsg): void {
   // cluster reads as a glowing constellation rather than a single dot.
   const t = (performance.now() / 1000) * 2 * Math.PI / 1.2;
   const pulse = 0.6 + 0.4 * (Math.sin(t) * 0.5 + 0.5);
-  ctx.lineWidth = Math.max(1.0, 2.5 / z);
-  ctx.strokeStyle = `rgba(255, 220, 60, ${pulse.toFixed(3)})`;
+  ctx.lineWidth = Math.max(0.6, 1.2 / z);
+  ctx.strokeStyle = `rgba(255, 220, 60, ${(pulse * 0.45).toFixed(3)})`;
   for (let i = 0; i < xs.length; i++) {
     ctx.beginPath();
     ctx.arc(xs[i], ys[i], 14, 0, Math.PI * 2);

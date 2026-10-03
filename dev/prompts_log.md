@@ -104,3 +104,9 @@ protocell step, follow explainer step).
 
 ## 26-10-03 04:30
 The tutorial window must be slightly transparent.
+
+## 26-10-03 04:45
+The "camera follows" step must be a task so the user switches Follow
+on themselves before the tour continues. Also the selected-atom
+circles look messy — make the selection rings thinner and
+semi-transparent.

@@ -110,3 +110,17 @@ The "camera follows" step must be a task so the user switches Follow
 on themselves before the tour continues. Also the selected-atom
 circles look messy — make the selection rings thinner and
 semi-transparent.
+
+## 26-10-03 05:10
+The info popup and the tutorial popup must both switch to the
+topmost z layer when clicked.
+
+## 26-10-03 05:30
+The tutorial window sinks too far into the background — it may only
+land one layer below the info popup, but right now it ends up under
+the game layer.
+
+## 26-10-03 05:50
+Better, but there is still a blur layer beneath the info popup that
+sits above the tutorial popup. When the tutorial moves behind the
+info popup, the blur layer must be below the tutorial popup.

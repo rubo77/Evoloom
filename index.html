@@ -789,14 +789,23 @@
       display: none;
       align-items: center;
       justify-content: center;
-      background: rgba(8, 12, 22, 0.72);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      z-index: 70;
       padding: 20px;
     }
     .inspector.shown { display: flex; }
+    /* The dim/blur layer is its own element so the tutorial overlay can
+       stack between it and the card — as a plain positioned child of a
+       context-free .inspector it competes in the global z-order. */
+    .inspector-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(8, 12, 22, 0.72);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 60;
+    }
     .inspector-card {
+      position: relative;
+      z-index: 70;
       width: min(720px, 100%);
       max-height: 100%;
       background: rgba(15, 22, 36, 0.96);
@@ -1511,6 +1520,7 @@
     <!-- LAB MODAL — Path-B custom chemistry editor. User-defined atoms and
          reactions live here; built-in chemistry is never modified. -->
     <div id="lab-modal" class="inspector" aria-hidden="true">
+      <div class="inspector-backdrop"></div>
       <div class="inspector-card" style="width: min(820px, 100%);">
         <div class="inspector-header">
           <span class="inspector-title">⚗️ Custom Chemistry Editor</span>
@@ -1600,6 +1610,7 @@
          inside scope-frame so it overlays only the sim, not the page.
          Sim keeps running underneath; this is a read-only study tool. -->
     <div id="inspector" class="inspector" aria-hidden="true">
+      <div class="inspector-backdrop"></div>
       <div class="inspector-card">
         <div class="inspector-header">
           <span class="inspector-title">🔬 Selection Inspector</span>

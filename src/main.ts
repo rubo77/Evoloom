@@ -984,6 +984,32 @@ const inspectorModal       = document.getElementById('inspector')           as H
 const inspectorCanvas      = document.getElementById('inspector-canvas')    as HTMLCanvasElement | null;
 const inspectorStats       = document.getElementById('inspector-stats')     as HTMLDivElement | null;
 const inspectorClose       = document.getElementById('inspector-close')     as HTMLButtonElement | null;
+
+// Floating popups race for the topmost layer: whichever was clicked last
+// wins. #tutorial-overlay is created lazily by the tutorial module, so
+// clicks are delegated on document and resolved at event time. The
+// tutorial card lives inside that overlay's stacking context, so its
+// click raises the overlay. .inspector is a context-free wrapper: its
+// .inspector-card is raised on click while the .inspector-backdrop keeps
+// its low base z — pinning the tutorial overlay just under the card
+// leaves it above the dim/blur layer instead of buried beneath it.
+let popupZ = 400;
+document.addEventListener('pointerdown', (e) => {
+  const target = e.target as HTMLElement | null;
+  if (!target) return;
+  if (target.closest('#tutorial-card')) {
+    const overlay = document.getElementById('tutorial-overlay');
+    if (overlay) overlay.style.zIndex = String(++popupZ);
+    return;
+  }
+  const popup = target.closest('.inspector');
+  if (popup instanceof HTMLElement) {
+    const card = popup.querySelector('.inspector-card');
+    if (card instanceof HTMLElement) card.style.zIndex = String(++popupZ);
+    const overlay = document.getElementById('tutorial-overlay');
+    if (overlay) overlay.style.zIndex = String(popupZ - 1);
+  }
+});
 const inspectorDownload    = document.getElementById('inspector-download')  as HTMLButtonElement | null;
 const inspectorLoad        = document.getElementById('inspector-load')      as HTMLButtonElement | null;
 const inspectBtn           = document.getElementById('inspect-btn')         as HTMLButtonElement | null;

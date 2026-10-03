@@ -1291,19 +1291,19 @@
       #game-overlay-sub   { font-size: 0.85rem; }
     }
     /* PORTRAIT mobile — canvas internal resolution is 800×1400. Display the
-       canvas with that aspect ratio and let it consume most of the vertical
-       viewport so the simulation is the dominant visual element. */
+       canvas with that aspect ratio at the full screen width; if it ends
+       up taller than the viewport the page scrolls — the sim stays the
+       dominant visual element. */
     @media (max-width: 900px) and (orientation: portrait),
            (pointer: coarse) and (orientation: portrait) {
+      body { padding-left: 0; padding-right: 0; }
+      .title-block { padding-left: 6px; padding-right: 6px; }
       canvas {
         aspect-ratio: 800 / 1400;
-        max-height: 78vh; /* leave room for status + ☰ Controls under the canvas */
-        width: auto !important;
+        width: 100% !important;
         height: auto !important;
       }
       .scope-frame {
-        display: flex;
-        justify-content: center;
         width: 100% !important;
       }
     }

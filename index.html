@@ -1271,9 +1271,14 @@
          hamburger underneath the canvas is no longer needed. Hide it. */
       .ctl-toggle { display: none !important; }
 
-      /* Mobile panel: full-width, backdrop active */
+      /* Mobile panel: fixed to the viewport so it is fully visible even
+         when the canvas frame extends beyond the fold. */
       .control-panel {
-        width: 92vw;
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: min(92vw, 420px);
         max-width: none;
       }
       .control-panel-backdrop {

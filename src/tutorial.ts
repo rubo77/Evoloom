@@ -28,6 +28,11 @@ export interface TutorialDeps {
   getBrush(): 'pan' | 'soup' | 'water' | 'select';
   /** Slide the viewport toward the nearest arena edge (scripted drops). */
   panTowardEdge(): void;
+  /** Center the camera on a world point, zooming so `radius` fits snugly. */
+  focusOn(x: number, y: number, radius: number): void;
+  /** Camera-follow the centroid of the current selection. */
+  setFollow(on: boolean): void;
+  isFollowing(): boolean;
   setSpeed(n: number): void;
   getSpeed(): number;
   setLysin(on: boolean): void;

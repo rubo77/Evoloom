@@ -80,3 +80,19 @@ Select atom must also be switchable off, otherwise you can't drag —
 explain that in the tutorial. Also, when an atom was selected and the
 cell gets dropped, make sure no atom of an existing cell is selected
 initially — otherwise the new cell drops right into the other cell.
+
+## 26-10-03 02:30
+You can zoom out way too far — the limit should be where the arena
+fills the full height or width depending on window orientation,
+never leaving white space outside the box in both dimensions; at
+maximum zoom-out it should center.
+
+## 26-10-03 03:15
+First build the camera-follow mode (step 1), commit it, then plan the
+tutorial-follow mode (step 2) — ideally with an explanation of how to
+switch it on yourself (in paused mode).
+
+## 26-10-03 03:45
+When nothing is selected the Follow button must be greyed out, and
+the button must sit next to the Select button. Change that, then
+commit it yourself, then update the plan with only the current todo.

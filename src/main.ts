@@ -68,6 +68,72 @@ function centerCamera(): void {
   camera.y = (GRID_H - VIEW_H / camera.zoom) / 2;
 }
 
+// Keep the camera inside the arena: center on the axis where the arena is
+// smaller than the view, clamp on the axis where it is larger.
+function clampCameraToArena(): void {
+  const vw = canvas.width / camera.zoom;
+  const vh = canvas.height / camera.zoom;
+  camera.x = vw >= GRID_W ? (GRID_W - vw) / 2 : Math.max(0, Math.min(GRID_W - vw, camera.x));
+  camera.y = vh >= GRID_H ? (GRID_H - vh) / 2 : Math.max(0, Math.min(GRID_H - vh, camera.y));
+}
+
+// ── Camera follow — tracks a captured set of atoms by ID ──────────────────
+// On activation the atom IDs of the current selection (snapshot flag bit4)
+// are captured; from then on the centroid of *those atoms* is followed, so
+// clearing the selection afterwards does not drop the track. Pure
+// main-thread work — no extra worker messages needed.
+let followIds: Set<number> | null = null;
+const followBtn = document.getElementById('follow-btn') as HTMLButtonElement | null;
+
+function setFollow(on: boolean): void {
+  if (on) {
+    const snap = lastSnapshot;
+    followIds = new Set<number>();
+    if (snap) {
+      for (let i = 0; i < snap.atomCount; i++) {
+        if (((snap.atoms[i * STRIDE + 3] | 0) & 16) !== 0) followIds.add(snap.atomIds[i]);
+      }
+    }
+    if (followIds.size === 0) {
+      followIds = null;
+      logStatus('⚠ Follow: nothing selected — select atoms first (🎯 tool)');
+    }
+  } else {
+    followIds = null;
+  }
+  if (followBtn) followBtn.textContent = `🎥 Follow: ${followIds ? 'ON' : 'OFF'}`;
+}
+if (followBtn) followBtn.addEventListener('click', () => setFollow(!followIds));
+
+// Called once per rendered frame while following.
+function followTick(snap: SnapshotMsg): void {
+  let sx = 0, sy = 0, n = 0;
+  for (let i = 0; i < snap.atomCount; i++) {
+    if (!followIds!.has(snap.atomIds[i])) continue;
+    sx += snap.atoms[i * STRIDE];
+    sy += snap.atoms[i * STRIDE + 1];
+    n++;
+  }
+  if (n === 0) {
+    setFollow(false);
+    logStatus('[CAM] follow stopped — tracked atoms gone');
+    return;
+  }
+  camera.x = sx / n - canvas.width / camera.zoom / 2;
+  camera.y = sy / n - canvas.height / camera.zoom / 2;
+  clampCameraToArena();
+}
+
+// Center the camera on a world point at a zoom that fits `radius` snugly —
+// used by scripted focuses (tutorial demos).
+function focusOn(x: number, y: number, radius: number): void {
+  const z = 0.8 * Math.min(canvas.width, canvas.height) / (2 * radius);
+  camera.zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, z));
+  camera.x = x - canvas.width / camera.zoom / 2;
+  camera.y = y - canvas.height / camera.zoom / 2;
+  clampCameraToArena();
+}
+
 // Mouse interactivity — behavior depends on brushMode (declared later but
 // referenced via closure that reads the mutable variable each event).
 let dragging = false;
@@ -162,6 +228,7 @@ canvas.addEventListener('mousedown', (e) => {
 window.addEventListener('mousemove', (e) => {
   if (!dragging) return;
   if (brushMode === 'pan') {
+    if (followIds !== null) setFollow(false); // user takes the camera back
     const d = clientDeltaToWorld(e.clientX - lastMx, e.clientY - lastMy);
     camera.x -= d.dx;
     camera.y -= d.dy;
@@ -192,6 +259,7 @@ canvas.style.cursor = 'grab';
 // Mouse wheel → zoom around cursor
 canvas.addEventListener('wheel', (e) => {
   e.preventDefault();
+  if (followIds !== null) setFollow(false); // user takes the camera back
   const c = clientToCanvas(e.clientX, e.clientY);
   const worldX = c.x / camera.zoom + camera.x;
   const worldY = c.y / camera.zoom + camera.y;
@@ -273,6 +341,7 @@ canvas.addEventListener('touchmove', (e: TouchEvent) => {
       (e.touches[0].clientY + e.touches[1].clientY) / 2,
     );
     if (pinchStartDist > 0 && newDist > 0) {
+      if (followIds !== null) setFollow(false); // user takes the camera back
       const scale = newDist / pinchStartDist;
       const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, pinchStartZoom * scale));
       if (newZoom <= MIN_ZOOM) {
@@ -289,6 +358,7 @@ canvas.addEventListener('touchmove', (e: TouchEvent) => {
   } else if (activeGesture === 'single' && e.touches.length === 1 && dragging) {
     const t = e.touches[0];
     if (brushMode === 'pan') {
+      if (followIds !== null) setFollow(false); // user takes the camera back
       const d = clientDeltaToWorld(t.clientX - lastMx, t.clientY - lastMy);
       camera.x -= d.dx;
       camera.y -= d.dy;
@@ -2650,6 +2720,9 @@ function launchTutorial(): void {
       const dir = cx < GRID_W / 2 ? -1 : 1;
       camera.x = Math.max(0, Math.min(GRID_W - vw, camera.x + dir * vw * 0.35));
     },
+    focusOn: (x, y, r) => focusOn(x, y, r),
+    setFollow: (on) => setFollow(on),
+    isFollowing: () => followIds !== null,
     setSpeed: (n) => {
       speedSlider.value = String(n);
       speedSlider.dispatchEvent(new Event('input'));
@@ -2667,6 +2740,7 @@ if (tutorialBtn2) tutorialBtn2.addEventListener('click', launchTutorial);
 function loop(): void {
   const snap = lastSnapshot;
   if (snap) {
+    if (followIds) followTick(snap);
     if (gameMode) {
       if (snap.gameStatus === 1 || snap.gameStatus === 2) showGameOverlay(snap.gameStatus);
       else hideGameOverlay();
@@ -2770,6 +2844,9 @@ function drawSelectionHalo(snap: SnapshotMsg): void {
       ? 'No selection · use the Select brush, then click any atom'
       : `${xs.length} atom${xs.length === 1 ? '' : 's'} selected · press I or click Open inspector`;
   }
+  // Follow needs a selection to capture; while a track is already live
+  // the button stays enabled so the user can release it.
+  if (followBtn) followBtn.disabled = xs.length === 0 && followIds === null;
   const microscope = viewMode === 'microscope';
   if (xs.length === 0) return;
 

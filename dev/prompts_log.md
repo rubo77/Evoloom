@@ -127,3 +127,13 @@ info popup, the blur layer must be below the tutorial popup.
 
 ## 26-10-03 06:20
 Add a shortcut S for Select on/off if there isn't an S shortcut yet.
+
+## 26-10-03 06:40
+Zooming in and out with the mouse wheel is much too fast — make it
+slower.
+
+## 26-10-03 07:05
+In the bottom shortcuts list, remove all shortcuts that already sit on
+the buttons. When the game is started, WASD steering must be explained
+at the bottom (hidden again when the game ends). The new S shortcut on
+the Select button must also be hidden while the game is running.

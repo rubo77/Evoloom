@@ -263,7 +263,11 @@ canvas.addEventListener('wheel', (e) => {
   const c = clientToCanvas(e.clientX, e.clientY);
   const worldX = c.x / camera.zoom + camera.x;
   const worldY = c.y / camera.zoom + camera.y;
-  const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
+  // Proportional zoom: scale with the wheel delta so one mouse notch
+  // (~100 px) is a gentle ~5 % step and high-resolution trackpad deltas
+  // glide instead of jumping. deltaMode 1 (lines) is normalized to px.
+  const deltaPx = e.deltaY * (e.deltaMode === 1 ? 16 : 1);
+  const factor = Math.exp(-deltaPx * 0.0005);
   const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, camera.zoom * factor));
   if (newZoom <= MIN_ZOOM) {
     camera.zoom = MIN_ZOOM;
@@ -744,6 +748,13 @@ function applyGameModeUI(): void {
   }
   // Brush state cannot persist into game mode (no brush tools available).
   if (gameMode) brushMode = 'pan';
+  // WASD steers the player in game mode — the Select shortcut badge is
+  // hidden while it has no effect, and the shortcuts card explains the
+  // steering keys instead.
+  const wasdHint = document.getElementById('wasd-hint');
+  if (wasdHint) wasdHint.style.display = gameMode ? 'contents' : 'none';
+  const selectBadge = selectBtn?.querySelector<HTMLElement>('.kbd-badge');
+  if (selectBadge) selectBadge.style.display = gameMode ? 'none' : '';
   hideGameOverlay();
 }
 

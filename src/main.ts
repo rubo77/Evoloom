@@ -2653,6 +2653,8 @@ function toggleFullscreen(): void {
 if (fsToggle) {
   fsToggle.addEventListener('click', toggleFullscreen);
 }
+const fsBtn = document.getElementById('fs-btn') as HTMLButtonElement | null;
+if (fsBtn) fsBtn.addEventListener('click', toggleFullscreen);
 // Sync the body class if user exits via Esc / native exit.
 document.addEventListener('fullscreenchange', () => {
   if (!document.fullscreenElement && document.body.classList.contains('canvas-fullscreen')) {

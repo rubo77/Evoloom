@@ -1296,6 +1296,12 @@
       /* Icon-only hamburger — the "Controls" word wastes space and the
          glyph is universally understood. */
       #menu-toggle .menu-label { display: none; }
+      /* Canvas chrome reduced to the hamburger: fullscreen and the
+         tutorial entry live inside the menu on touch layouts. */
+      #fs-toggle, #tutorial-btn { display: none; }
+      /* In pseudo-fullscreen the corner ⛶/✕ button is the only way back
+         — keep it visible even though it is hidden in the normal view. */
+      body.canvas-fullscreen #fs-toggle { display: inline-flex; }
       .inline-sliders { font-size: 0.72rem; }
       .inline-sliders input[type=range] { width: 100px; }
       #game-overlay-title { font-size: 1.7rem; }
@@ -1699,6 +1705,7 @@
         <button id="rec-btn">● REC<span class="kbd-badge">R</span></button>
       </div>
       <div class="card__row">
+        <button id="fs-btn">⛶ Fullscreen</button>
         <button id="tutorial-btn2">🎓 Tutorial</button>
       </div>
     </div>

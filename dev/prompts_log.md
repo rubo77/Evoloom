@@ -124,3 +124,6 @@ the game layer.
 Better, but there is still a blur layer beneath the info popup that
 sits above the tutorial popup. When the tutorial moves behind the
 info popup, the blur layer must be below the tutorial popup.
+
+## 26-10-03 06:20
+Add a shortcut S for Select on/off if there isn't an S shortcut yet.

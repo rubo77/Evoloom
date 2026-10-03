@@ -275,8 +275,7 @@
       border-color: rgba(212, 166, 79, 0.45);
       color: var(--c-primary);
     }
-    /* Backwards-compat — anywhere old .fs-toggle CSS is referenced */
-    .fs-toggle { /* deprecated, retained for safety */ }
+
 
     /* Microscope vignette */
     .scope-frame::after {
@@ -1504,7 +1503,7 @@
         <span class="menu-icon">☰</span>
         <span class="menu-label">Controls</span>
       </button>
-      <button id="fs-toggle" class="canvas-tool-btn" aria-label="Toggle fullscreen" title="Fullscreen">⛶</button>
+      <button id="fs-toggle" class="canvas-tool-btn fs-toggle" aria-label="Toggle fullscreen" title="Fullscreen">⛶</button>
       <button id="tutorial-btn" class="canvas-tool-btn" aria-label="Interactive tutorial" title="Interactive tutorial">?</button>
     </div>
     <div id="game-overlay">
@@ -1702,7 +1701,7 @@
         <button id="clear-water-btn">Clear water<span class="kbd-badge">C</span></button>
       </div>
       <div class="card__row">
-        <button id="select-btn">🎯 Select: <span class="brush-state">OFF</span></button>
+        <button id="select-btn">🎯 Select: <span class="brush-state">OFF</span><span class="kbd-badge">S</span></button>
         <button id="follow-btn" disabled>🎥 Follow: OFF</button>
         <button id="lysin-btn">Lysin: OFF<span class="kbd-badge">P</span></button>
       </div>

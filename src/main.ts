@@ -2691,6 +2691,7 @@ document.addEventListener('keydown', (e) => {
   if (e.code === 'KeyR')  { toggleRecording(); }
   if (e.code === 'KeyB')  { setBrush('soup'); }
   if (e.code === 'KeyW')  { setBrush('water'); }
+  if (e.code === 'KeyS')  { setBrush('select'); }
   if (e.code === 'KeyC')  { clearWater(); }
   if (e.code === 'KeyV')  { toggleView(); }
   if (e.code === 'KeyG')  { toggleGame(); }

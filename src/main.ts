@@ -858,6 +858,19 @@ function applyGameModeUI(): void {
   if (wasdHint) wasdHint.style.display = gameMode ? 'contents' : 'none';
   const selectBadge = selectBtn?.querySelector<HTMLElement>('.kbd-badge');
   if (selectBadge) selectBadge.style.display = gameMode ? 'none' : '';
+  // The worker suspends sandbox noise/hydrolysis while a match runs —
+  // the buttons mirror the suspended OFF state and are disabled so no
+  // mid-game click can re-enable hazards the game does not own. On exit
+  // they show the user's sandbox setting again (noiseOn/hydroOn are
+  // unchanged).
+  noiseBtn.textContent = (!gameMode && noiseOn) ? '🧬 Noise: ON' : '🧬 Noise: OFF';
+  noiseBtn.classList.toggle('active', !gameMode && noiseOn);
+  noiseSlidersRow.classList.toggle('shown', !gameMode && noiseOn);
+  noiseBtn.disabled = gameMode;
+  hydroBtn.textContent = (!gameMode && hydroOn) ? '💧🧪 Hydrolysis: ON' : '💧🧪 Hydrolysis: OFF';
+  hydroBtn.classList.toggle('active', !gameMode && hydroOn);
+  hydroSlidersRow.classList.toggle('shown', !gameMode && hydroOn);
+  hydroBtn.disabled = gameMode;
   hideGameOverlay();
 }
 
@@ -2435,6 +2448,7 @@ function refreshNoiseLabels(): void {
   noiseBondVal.textContent  = fmtProb(sliderToProb(parseInt(noiseBondSlider.value)  || 0));
 }
 function toggleNoise(): void {
+  if (gameMode) return; // hazard toggles are suspended while a match runs
   // Auto-snapshot the pre-toggle state so a one-click rewind is available
   // if the toggle ruins something interesting.
   captureAutoSnapshot(noiseOn ? 'before-noise-off' : 'before-noise-on');
@@ -2583,6 +2597,7 @@ function refreshHydroLabels(): void {
   hydroDensityVal.textContent = hydroDensityFromSlider(parseInt(hydroDensitySlider.value) || 10).toFixed(4);
 }
 function toggleHydro(): void {
+  if (gameMode) return; // hazard toggles are suspended while a match runs
   captureAutoSnapshot(hydroOn ? 'before-hydro-off' : 'before-hydro-on');
   hydroOn = !hydroOn;
   hydroBtn.textContent = hydroOn ? '💧🧪 Hydrolysis: ON' : '💧🧪 Hydrolysis: OFF';

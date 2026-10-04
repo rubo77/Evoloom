@@ -198,8 +198,14 @@ const WATER_RESPAWN_INTERVAL  = 4250;  // ticks between water drops + merge pass
 const LYSIN_RESPAWN_INTERVAL  = 10000; // ticks between lysin micro-spots
 const LYSIN_PER_SPOT          = 35;
 const WIN_NO_ENEMY_TICKS      = 2400;  // ~5 sec at default 480 steps/sec
+const LOSE_NO_PLAYER_TICKS    = 480;   // ~1 sec grace — a transient frame with no
+                                       // closed player loop is not a death
 let gameStatus = 0;        // 0 playing, 1 won, 2 lost
 let noEnemyStartIter = -1; // -1 = enemies present; otherwise iteration when they vanished
+let noPlayerStartIter = -1; // same, for the player's loop
+// Sandbox hazard toggles suspended while a match runs — restored on endGame.
+let savedSandboxNoise = false;
+let savedSandboxHydro = false;
 let lastLoopCounts = { player: 0, enemy: 0 };
 
 // Buffer pool — three quintuplets so we never starve while one is rendered and
@@ -264,6 +270,14 @@ function setupGame(): void {
   grid.create(gridW, gridH);
   grid.getChemistry().clear();
   grid.energyEnabled = false;
+  // The match spawns its own hazards on a timer (lysin spots, respawning
+  // soup/water). Sandbox noise and hydrolysis toggles are suspended for
+  // the duration so leftover settings cannot add off-rule hazards —
+  // the droplets below stay empty water shells without water atoms.
+  savedSandboxNoise = noise.enabled;
+  savedSandboxHydro = hydrolysis.enabled;
+  noise.enabled = false;
+  hydrolysis.enabled = false;
   // Re-register the chemistry rules from initSimple, but pass NO cell centers
   // and NO background — we'll seed our own scattered world below.
   initSimple(grid, [], 0);
@@ -523,12 +537,18 @@ function packSnapshot(atomsBuf: Float32Array, atomIdsBuf: Uint32Array, loopsBuf:
   lastLoopCounts.enemy  = loopRes.enemyLoops;
   if (inGame && gameStatus === 0) {
     if (loopRes.playerLoops === 0) {
-      gameStatus = 2; // lose
-    } else if (loopRes.enemyLoops === 0) {
-      if (noEnemyStartIter < 0) noEnemyStartIter = grid.iterations;
-      if (grid.iterations - noEnemyStartIter >= WIN_NO_ENEMY_TICKS) gameStatus = 1;
+      // Grace window mirrors the win path: membranes open transiently while
+      // dividing or reshaping, so only a sustained loss counts as a death.
+      if (noPlayerStartIter < 0) noPlayerStartIter = grid.iterations;
+      if (grid.iterations - noPlayerStartIter >= LOSE_NO_PLAYER_TICKS) gameStatus = 2; // lose
     } else {
-      noEnemyStartIter = -1;
+      noPlayerStartIter = -1;
+      if (loopRes.enemyLoops === 0) {
+        if (noEnemyStartIter < 0) noEnemyStartIter = grid.iterations;
+        if (grid.iterations - noEnemyStartIter >= WIN_NO_ENEMY_TICKS) gameStatus = 1;
+      } else {
+        noEnemyStartIter = -1;
+      }
     }
   }
 
@@ -745,6 +765,7 @@ function loadSaveState(s: SaveState): string | null {
   inGame = false;
   gameStatus = 0;
   noEnemyStartIter = -1;
+  noPlayerStartIter = -1;
   burning = false;
   burnTarget = 0;
   selectedSet.clear();
@@ -965,6 +986,7 @@ self.onmessage = (e: MessageEvent<unknown>) => {
       inGame = true;
       gameStatus = 0;
       noEnemyStartIter = -1;
+      noPlayerStartIter = -1;
       setupGame();
       postSnapshotIfPaused();
       return;
@@ -972,7 +994,10 @@ self.onmessage = (e: MessageEvent<unknown>) => {
       inGame = false;
       gameStatus = 0;
       noEnemyStartIter = -1;
+      noPlayerStartIter = -1;
       setupRigged();
+      noise.enabled = savedSandboxNoise;
+      hydrolysis.enabled = savedSandboxHydro;
       postSnapshotIfPaused();
       return;
     case 'setPlayerInput':

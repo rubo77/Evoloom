@@ -184,3 +184,12 @@ When the game starts, one atom in the new green controllable cell must
 be auto-selected and follow switched on. The follow toggle gets the F
 shortcut, so freeze needs another one — why is it called "freeze"
 anyway? Suggest a free, fitting shortcut.
+
+## 26-10-04 11:10
+Something changed — I keep dying very fast now, after ~20s or so,
+varies, "all your cells were lysed".
+
+## 26-10-04 11:40
+When toggling states, the menu buttons must show the new states, also
+when restoring after the game. Right now e.g. the hydrolysis button
+stays active when starting a game although it is actually off.

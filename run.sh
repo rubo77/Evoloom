@@ -10,6 +10,18 @@ URL="http://localhost:$PORT/"
 # Build fresh bundles so the browser never serves stale output.
 npm run build
 
+# A previous run (or a stray server) may still hold the port — stop it
+# instead of failing on "Address already in use".
+if command -v fuser >/dev/null 2>&1; then
+  fuser -k "$PORT"/tcp 2>/dev/null && sleep 0.3 || true
+elif command -v lsof >/dev/null 2>&1; then
+  holders="$(lsof -ti ":$PORT" 2>/dev/null || true)"
+  if [ -n "$holders" ]; then
+    kill $holders 2>/dev/null || true
+    sleep 0.3
+  fi
+fi
+
 # Serve the repo root: index.html and dist/ must stay siblings.
 python3 -m http.server "$PORT" --bind 127.0.0.1 &
 SERVER_PID=$!

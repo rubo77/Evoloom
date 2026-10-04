@@ -252,3 +252,7 @@ Is the burn mode actually faster than the visible simulation now? It
 does not seem so — is it even possible to simulate faster without
 visibility, or is the display marginal in comparison? In that case the
 whole burn block can be hidden for now.
+
+## 26-10-04 17:55
+Fix the error: when the address is already in use, stop the server
+with kill first.

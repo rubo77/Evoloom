@@ -292,3 +292,9 @@ Why is the pause button hidden once the game has started? And the WASD
 steering doesn't work — instead it should be: when no tool is selected,
 you can just press anywhere on the screen and the green bacterium moves
 toward where you press for as long as you hold.
+
+## 26-10-04 21:05
+When the game starts, the top-left HUD must change completely: it must
+show how many enemies / enemy elements there are and how big the player
+has grown. Analyze exactly what the win conditions are and how close one
+is to the goal or to death.

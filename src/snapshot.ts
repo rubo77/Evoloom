@@ -34,6 +34,7 @@ export type SnapshotMsg = {
   enemyCount:  number;       // # of full enemy loops on screen this snapshot
   playerCount: number;       // # of full player loops
   winCountdownIter: number;  // iterations remaining before win is awarded (0 if not currently winning)
+  loseCountdownIter: number; // iterations remaining before death is declared (0 while a live player loop exists)
 };
 
 export type ControlMsg =

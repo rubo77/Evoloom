@@ -17,7 +17,7 @@
 import { ControlMsg, SnapshotMsg, BurnProgressMsg, BurnDoneMsg, SaveStateMsg, LoadResultMsg, EventLogChunkMsg, SelectionExportMsg, SelectionState, CustomAtomDef, CustomRuleSpec, SaveState, STRIDE } from './snapshot';
 import { setCustomAtomColor as setGPUCustomColor } from './renderer-gpu';
 import { setClassicAtomColor, setEducationalAtomColor } from './renderer-2d';
-import { draw2D, draw2DClassic, drawHUD2D, drawArenaBorder, HUD_STATS_RECT } from './renderer-2d';
+import { draw2D, draw2DClassic, drawHUD2D, drawGameHUD2D, drawArenaBorder, HUD_STATS_RECT } from './renderer-2d';
 import { initGPU, drawGPU } from './renderer-gpu';
 import { startTutorial, observeControl } from './tutorial';
 
@@ -3154,6 +3154,22 @@ if (tutorialBtn) tutorialBtn.addEventListener('click', launchTutorial);
 if (tutorialBtn2) tutorialBtn2.addEventListener('click', launchTutorial);
 
 // ── Render loop ─────────────────────────────────────────────────────────────
+// In game mode the top-left HUD swaps the sandbox stats for match state:
+// enemies left, own cells/size and how close the win/lose timers are.
+function drawHud(ctx: CanvasRenderingContext2D, snap: SnapshotMsg): void {
+  if (gameMode) {
+    drawGameHUD2D(ctx, snap.atoms, snap.atomCount, {
+      playerCells: snap.playerCount,
+      enemyCells: snap.enemyCount,
+      winIters: snap.winCountdownIter,
+      loseIters: snap.loseCountdownIter,
+      gameStatus: snap.gameStatus,
+    });
+  } else {
+    drawHUD2D(ctx, snap.iterations, snap.atomCount, snap.atoms);
+  }
+}
+
 function loop(): void {
   snapTick();
   const snap = lastSnapshot;
@@ -3203,7 +3219,7 @@ function loop(): void {
         overlayCtx.setTransform(1, 0, 0, 1, 0, 0);
       }
       if (viewMode === 'educational' && hudVisible) {
-        drawHUD2D(overlayCtx, snap.iterations, snap.atomCount, snap.atoms);
+        drawHud(overlayCtx, snap);
         // The stats box width tracks its text — re-dock the toggle each
         // frame so it stays pinned to the box's top-right corner.
         positionHudToggle();
@@ -3219,7 +3235,7 @@ function loop(): void {
       if (viewMode === 'educational' && hudVisible) {
         // HUD always in screen space — reset transform first
         ctx2d.setTransform(1, 0, 0, 1, 0, 0);
-        drawHUD2D(ctx2d, snap.iterations, snap.atomCount, snap.atoms);
+        drawHud(ctx2d, snap);
         positionHudToggle();
       }
     }

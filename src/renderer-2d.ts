@@ -785,33 +785,28 @@ export function drawArenaBorder(
 export const HUD_STATS_RECT = { x: 6, y: 6, w: 240, h: 42 };
 const HUD_LEGEND_W = 240;
 
-export function drawHUD2D(ctx: CanvasRenderingContext2D, iterations: number, atomCount: number, atoms: Float32Array): void {
-  ctx.save();
-  let bonded = 0;
-  for (let i = 0; i < atomCount; i++) {
-    if ((atoms[i * STRIDE + 3] | 0) & 1) bonded++;
-  }
-  ctx.font = '12px monospace';
-  const line1 = `iter:   ${iterations.toLocaleString()}`;
-  const line2 = `bonded: ${bonded} free: ${atomCount - bonded}`;
-  // The ‹/› toggle docks left-aligned inside the box, next to the text —
-  // the text sits right of a reserved strip (26 CSS px button + 8px
-  // inset), converted into canvas-internal px via the display scale.
-  // The box hugs its content: at most as wide as the legend, growing
-  // past it only when the numbers themselves need the room.
+// X offset of the HUD text — the ‹/› toggle docks left-aligned inside
+// the box, so the text sits right of a reserved strip (26 CSS px
+// button + 8px inset), converted into canvas-internal px via the
+// display scale.
+function hudTextX(ctx: CanvasRenderingContext2D): number {
   const s = ctx.canvas.clientWidth ? ctx.canvas.clientWidth / ctx.canvas.width : 1;
-  const textX = HUD_STATS_RECT.x + 8 + 34 / s + 6;
-  const textW = Math.max(ctx.measureText(line1).width, ctx.measureText(line2).width);
-  HUD_STATS_RECT.w = textX - HUD_STATS_RECT.x + textW + 8;
-  ctx.fillStyle = 'rgba(0,0,0,0.6)';
-  ctx.fillRect(HUD_STATS_RECT.x, HUD_STATS_RECT.y, HUD_STATS_RECT.w, HUD_STATS_RECT.h);
-  ctx.fillStyle = '#ffffff';
-  ctx.fillText(line1, textX, 22);
-  ctx.fillText(line2, textX, 38);
+  return HUD_STATS_RECT.x + 8 + 34 / s + 6;
+}
 
+// The box hugs its content: at most as wide as the legend, growing
+// past it only when the text itself needs the room.
+function drawHudBox(ctx: CanvasRenderingContext2D, textX: number, textW: number, h: number): void {
+  HUD_STATS_RECT.w = textX - HUD_STATS_RECT.x + textW + 8;
+  HUD_STATS_RECT.h = h;
+  ctx.fillStyle = 'rgba(0,0,0,0.6)';
+  ctx.fillRect(HUD_STATS_RECT.x, HUD_STATS_RECT.y, HUD_STATS_RECT.w, h);
+}
+
+function drawHudLegend(ctx: CanvasRenderingContext2D): void {
   const PAD = 10, SZ = 10, ROW = 18;
   const H = PAD * 2 + LEGEND.length * ROW - 2;
-  const lx = 6, ly = 56;
+  const lx = 6, ly = HUD_STATS_RECT.y + HUD_STATS_RECT.h + 8;
   ctx.fillStyle = 'rgba(0,0,0,0.6)';
   ctx.fillRect(lx, ly, HUD_LEGEND_W, H);
   ctx.font = '11px monospace';
@@ -833,6 +828,79 @@ export function drawHUD2D(ctx: CanvasRenderingContext2D, iterations: number, ato
     ctx.fillStyle = '#dddddd';
     ctx.fillText(label, lx + PAD + SZ + 8, y + SZ - 1);
   });
+}
+
+export function drawHUD2D(ctx: CanvasRenderingContext2D, iterations: number, atomCount: number, atoms: Float32Array): void {
+  ctx.save();
+  let bonded = 0;
+  for (let i = 0; i < atomCount; i++) {
+    if ((atoms[i * STRIDE + 3] | 0) & 1) bonded++;
+  }
+  ctx.font = '12px monospace';
+  const line1 = `iter:   ${iterations.toLocaleString()}`;
+  const line2 = `bonded: ${bonded} free: ${atomCount - bonded}`;
+  const textX = hudTextX(ctx);
+  const textW = Math.max(ctx.measureText(line1).width, ctx.measureText(line2).width);
+  drawHudBox(ctx, textX, textW, 42);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(line1, textX, 22);
+  ctx.fillText(line2, textX, 38);
+  drawHudLegend(ctx);
+  ctx.restore();
+}
+
+// Game-mode HUD stats — mirrors the win/lose rules evaluated in the
+// worker (physics-worker.ts → packSnapshot): a membrane loop counts as
+// "alive" when both genome markers ('e' and 'f') stay bonded to it.
+export type GameHudStats = {
+  playerCells: number;   // alive player membrane loops (0 = dying)
+  enemyCells: number;    // alive enemy loops left to wipe out (0 = winning)
+  winIters: number;      // iterations until victory (0 while enemies remain)
+  loseIters: number;     // iterations until death (0 while a player loop lives)
+  gameStatus: number;    // 0 playing, 1 won, 2 lost
+};
+
+// Iterations ≈ steps: the worker's win/lose timers assume ~480 steps/s.
+const HUD_ITERS_PER_SEC = 480;
+
+export function drawGameHUD2D(ctx: CanvasRenderingContext2D, atoms: Float32Array, atomCount: number, stats: GameHudStats): void {
+  ctx.save();
+  let playerAtoms = 0;
+  for (let i = 0; i < atomCount; i++) {
+    // Atom flags bit3 = playerControlled (see packSnapshot in the worker).
+    if ((atoms[i * STRIDE + 3] | 0) & 8) playerAtoms++;
+  }
+  ctx.font = '12px monospace';
+  const line1 = `enemies: ${stats.enemyCells}`;
+  const line2 = `you: ${stats.playerCells} cell · ${playerAtoms} atoms`;
+  let status = `${stats.enemyCells} cells to wipe out`;
+  let statusColor = '#ffffff';
+  if (stats.gameStatus === 1) {
+    status = 'victory!';
+    statusColor = '#5edca0';
+  } else if (stats.gameStatus === 2) {
+    status = 'dead';
+    statusColor = '#ff6464';
+  } else if (stats.playerCells === 0) {
+    status = `membrane down — reseal in ${(stats.loseIters / HUD_ITERS_PER_SEC).toFixed(1)}s!`;
+    statusColor = '#ff6464';
+  } else if (stats.winIters > 0) {
+    status = `victory in ${(stats.winIters / HUD_ITERS_PER_SEC).toFixed(1)}s`;
+    statusColor = '#5edca0';
+  }
+  const textX = hudTextX(ctx);
+  const textW = Math.max(
+    ctx.measureText(line1).width,
+    ctx.measureText(line2).width,
+    ctx.measureText(status).width);
+  drawHudBox(ctx, textX, textW, 58);
+  const ty = HUD_STATS_RECT.y + 16;
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(line1, textX, ty);
+  ctx.fillText(line2, textX, ty + 16);
+  ctx.fillStyle = statusColor;
+  ctx.fillText(status, textX, ty + 32);
+  drawHudLegend(ctx);
   ctx.restore();
 }
 

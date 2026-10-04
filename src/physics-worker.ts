@@ -611,6 +611,9 @@ function postSnapshot(): void {
   const winCountdown = (inGame && noEnemyStartIter >= 0)
     ? Math.max(0, WIN_NO_ENEMY_TICKS - (grid.iterations - noEnemyStartIter))
     : 0;
+  const loseCountdown = (inGame && noPlayerStartIter >= 0)
+    ? Math.max(0, LOSE_NO_PLAYER_TICKS - (grid.iterations - noPlayerStartIter))
+    : 0;
   const msg: SnapshotMsg = {
     type: 'snapshot',
     iterations: grid.iterations,
@@ -625,6 +628,7 @@ function postSnapshot(): void {
     playerCount: lastLoopCounts.player,
     enemyCount:  lastLoopCounts.enemy,
     winCountdownIter: winCountdown,
+    loseCountdownIter: loseCountdown,
   };
   self.postMessage(msg, [
     atoms.buffer as Transferable,

@@ -168,3 +168,10 @@ a minimum height; it must be much smaller, ~100px or so.
 ## 26-10-04 04:35
 That's not a good solution — the sim screen should always use the full
 width, even at low heights.
+
+## 26-10-04 05:20
+The snap at the end when fully zoomed out should ease over 0.5s.
+
+## 26-10-04 05:50
+In camera follow mode the camera shouldn't jitter — it should only
+update the position every 0.5s with a 0.5s ease.

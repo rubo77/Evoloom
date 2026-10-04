@@ -65,14 +65,53 @@ const camera = {
 let MIN_ZOOM = fitZoom;
 const MAX_ZOOM = 6;
 
-// Keep the camera inside the arena: pin to the top-left on the axis
-// where the view is larger than the grid (margin collects on the right
-// or bottom edge), clamp on the axis where it is smaller.
+// Clamp a camera position into the arena at the given zoom: top-left on
+// the axis where the view is larger than the grid (margin collects on
+// the right or bottom edge), clamped on the axis where it is smaller.
+function clampCamXY(x: number, y: number, zoom: number): { x: number; y: number } {
+  const vw = canvas.width / zoom;
+  const vh = canvas.height / zoom;
+  return {
+    x: vw >= GRID_W ? 0 : Math.max(0, Math.min(GRID_W - vw, x)),
+    y: vh >= GRID_H ? 0 : Math.max(0, Math.min(GRID_H - vh, y)),
+  };
+}
 function clampCameraToArena(): void {
-  const vw = canvas.width / camera.zoom;
-  const vh = canvas.height / camera.zoom;
-  camera.x = vw >= GRID_W ? 0 : Math.max(0, Math.min(GRID_W - vw, camera.x));
-  camera.y = vh >= GRID_H ? 0 : Math.max(0, Math.min(GRID_H - vh, camera.y));
+  const c = clampCamXY(camera.x, camera.y, camera.zoom);
+  camera.x = c.x;
+  camera.y = c.y;
+}
+
+// ── Fit snap ──────────────────────────────────────────────────────────
+// Hitting the zoom floor eases the camera into the fully-fitted,
+// top-left-pinned position over ~0.5 s instead of jumping. Any manual
+// camera move (pan, wheel-in, pinch, follow, scripted focus) cancels
+// the tween.
+const SNAP_MS = 500;
+let camSnap: {
+  t0: number;
+  fx: number; fy: number; fz: number;
+  tx: number; ty: number; tz: number;
+} | null = null;
+
+function snapCameraToFit(): void {
+  const t = clampCamXY(camera.x, camera.y, MIN_ZOOM);
+  camSnap = {
+    t0: performance.now(),
+    fx: camera.x, fy: camera.y, fz: camera.zoom,
+    tx: t.x, ty: t.y, tz: MIN_ZOOM,
+  };
+}
+
+// Called once per frame from the render loop.
+function snapTick(): void {
+  if (!camSnap) return;
+  const t = Math.min(1, (performance.now() - camSnap.t0) / SNAP_MS);
+  const e = 1 - (1 - t) * (1 - t) * (1 - t); // ease-out cubic
+  camera.x    = camSnap.fx + (camSnap.tx - camSnap.fx) * e;
+  camera.y    = camSnap.fy + (camSnap.ty - camSnap.fy) * e;
+  camera.zoom = camSnap.fz + (camSnap.tz - camSnap.fz) * e;
+  if (t >= 1) camSnap = null;
 }
 
 // ── Fluid canvas sizing ───────────────────────────────────────────────
@@ -88,6 +127,7 @@ function resizeCanvasToDisplay(): void {
   const w = Math.max(1, Math.round(canvas.clientWidth));
   const h = Math.max(1, Math.round(canvas.clientHeight));
   if (w === canvas.width && h === canvas.height) return;
+  camSnap = null;
   canvas.width = overlay.width = w;
   canvas.height = overlay.height = h;
   // A camera sitting at the old minimum stays fully zoomed out on the
@@ -134,7 +174,9 @@ function setFollow(on: boolean): void {
 }
 if (followBtn) followBtn.addEventListener('click', () => setFollow(!followIds));
 
-// Called once per rendered frame while following.
+// Called once per rendered frame while following. The centroid is
+// re-sampled at most every SNAP_MS and reached via the snap tween — the
+// camera glides to each sample instead of jittering frame-by-frame.
 function followTick(snap: SnapshotMsg): void {
   let sx = 0, sy = 0, n = 0;
   for (let i = 0; i < snap.atomCount; i++) {
@@ -148,14 +190,24 @@ function followTick(snap: SnapshotMsg): void {
     logStatus('[CAM] follow stopped — tracked atoms gone');
     return;
   }
-  camera.x = sx / n - canvas.width / camera.zoom / 2;
-  camera.y = sy / n - canvas.height / camera.zoom / 2;
-  clampCameraToArena();
+  const now = performance.now();
+  if (camSnap && now - camSnap.t0 < SNAP_MS) return;
+  const c = clampCamXY(
+    sx / n - canvas.width  / camera.zoom / 2,
+    sy / n - canvas.height / camera.zoom / 2,
+    camera.zoom,
+  );
+  camSnap = {
+    t0: now,
+    fx: camera.x, fy: camera.y, fz: camera.zoom,
+    tx: c.x, ty: c.y, tz: camera.zoom,
+  };
 }
 
 // Center the camera on a world point at a zoom that fits `radius` snugly —
 // used by scripted focuses (tutorial demos).
 function focusOn(x: number, y: number, radius: number): void {
+  camSnap = null;
   const z = 0.8 * Math.min(canvas.width, canvas.height) / (2 * radius);
   camera.zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, z));
   camera.x = x - canvas.width / camera.zoom / 2;
@@ -258,6 +310,7 @@ window.addEventListener('mousemove', (e) => {
   if (!dragging) return;
   if (brushMode === 'pan') {
     if (followIds !== null) setFollow(false); // user takes the camera back
+    camSnap = null;
     const d = clientDeltaToWorld(e.clientX - lastMx, e.clientY - lastMy);
     camera.x -= d.dx;
     camera.y -= d.dy;
@@ -299,9 +352,9 @@ canvas.addEventListener('wheel', (e) => {
   const factor = Math.exp(-deltaPx * 0.0005);
   const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, camera.zoom * factor));
   if (newZoom <= MIN_ZOOM) {
-    camera.zoom = MIN_ZOOM;
-    clampCameraToArena();
+    snapCameraToFit();
   } else {
+    camSnap = null;
     camera.x = worldX - c.x / newZoom;
     camera.y = worldY - c.y / newZoom;
     camera.zoom = newZoom;
@@ -378,9 +431,9 @@ canvas.addEventListener('touchmove', (e: TouchEvent) => {
       const scale = newDist / pinchStartDist;
       const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, pinchStartZoom * scale));
       if (newZoom <= MIN_ZOOM) {
-        camera.zoom = MIN_ZOOM;
-        clampCameraToArena();
+        snapCameraToFit();
       } else {
+        camSnap = null;
         const worldX = pinchStartMidX / pinchStartZoom + pinchStartCamX;
         const worldY = pinchStartMidY / pinchStartZoom + pinchStartCamY;
         camera.x = worldX - newMidCanvas.x / newZoom;
@@ -392,6 +445,7 @@ canvas.addEventListener('touchmove', (e: TouchEvent) => {
     const t = e.touches[0];
     if (brushMode === 'pan') {
       if (followIds !== null) setFollow(false); // user takes the camera back
+      camSnap = null;
       const d = clientDeltaToWorld(t.clientX - lastMx, t.clientY - lastMy);
       camera.x -= d.dx;
       camera.y -= d.dy;
@@ -2809,6 +2863,7 @@ function launchTutorial(): void {
     // used before scripted drops so pasted content lands in open space
     // instead of on top of whatever the user was inspecting at center.
     panTowardEdge: () => {
+      camSnap = null;
       const vw = canvas.width / camera.zoom;
       const cx = camera.x + vw / 2;
       const dir = cx < GRID_W / 2 ? -1 : 1;
@@ -2832,6 +2887,7 @@ if (tutorialBtn2) tutorialBtn2.addEventListener('click', launchTutorial);
 
 // ── Render loop ─────────────────────────────────────────────────────────────
 function loop(): void {
+  snapTick();
   const snap = lastSnapshot;
   if (snap) {
     if (followIds) followTick(snap);

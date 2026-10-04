@@ -26,7 +26,7 @@ test('follow mode tracks selection and yields to manual pan', async ({ page }) =
   // nothing and Follow refuses to start).
   const box = await page.locator('#canvas').boundingBox();
   await page.click('#select-btn');
-  await page.mouse.move(box.x + 10, box.y + 10);
+  await page.mouse.move(box.x + 60, box.y + 60);
   await page.mouse.down();
   await page.mouse.move(box.x + box.width - 10, box.y + box.height - 10, { steps: 5 });
   await page.mouse.up();

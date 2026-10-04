@@ -17,7 +17,7 @@
 import { ControlMsg, SnapshotMsg, BurnProgressMsg, BurnDoneMsg, SaveStateMsg, LoadResultMsg, EventLogChunkMsg, SelectionExportMsg, SelectionState, CustomAtomDef, CustomRuleSpec, SaveState, STRIDE } from './snapshot';
 import { setCustomAtomColor as setGPUCustomColor } from './renderer-gpu';
 import { setClassicAtomColor, setEducationalAtomColor } from './renderer-2d';
-import { draw2D, draw2DClassic, drawHUD2D, drawArenaBorder } from './renderer-2d';
+import { draw2D, draw2DClassic, drawHUD2D, drawArenaBorder, HUD_STATS_RECT } from './renderer-2d';
 import { initGPU, drawGPU } from './renderer-gpu';
 import { startTutorial, observeControl } from './tutorial';
 
@@ -143,7 +143,13 @@ resizeCanvasToDisplay();
 let _resizeRaf = 0;
 window.addEventListener('resize', () => {
   if (_resizeRaf) return;
-  _resizeRaf = requestAnimationFrame(() => { _resizeRaf = 0; resizeCanvasToDisplay(); });
+  _resizeRaf = requestAnimationFrame(() => {
+    _resizeRaf = 0;
+    resizeCanvasToDisplay();
+    // The HUD toggle's docked position is in canvas-internal px —
+    // recompute it whenever the display scale changes.
+    applyHudVisibility();
+  });
 });
 
 // ── Camera follow — tracks a captured set of atoms by ID ──────────────────
@@ -642,6 +648,76 @@ function logStatus(msg: string): void {
   console.log('[EVOLOOM]', msg);
 }
 
+// ── Button help hints in the status line ────────────────────────────────────
+// Every control button carries a data-help description. Hovering (or
+// long-pressing on touch) previews that text in the status line without
+// firing the control; leaving restores whatever was there before. A real
+// logStatus() landing while a hint is visible wins — the restore only
+// runs while the hint text is still showing.
+let helpBackup: string | null = null;
+let helpShownFor: Element | null = null;
+let helpTouchTimer = 0;
+let helpSuppressClick = false;
+function showHelpHint(el: Element): void {
+  const help = el.getAttribute('data-help');
+  if (!help || !statusEl) return;
+  if (helpShownFor === null) helpBackup = statusEl.textContent;
+  helpShownFor = el;
+  statusEl.textContent = help;
+}
+function hideHelpHint(el: Element): void {
+  if (helpShownFor !== el || !statusEl) return;
+  if (statusEl.textContent === el.getAttribute('data-help')) {
+    statusEl.textContent = helpBackup;
+  }
+  helpShownFor = null;
+  helpBackup = null;
+}
+// Delegated mouse hover — mouseover/mouseout bubble, closest() resolves
+// the hint owner for lazy or nested content (e.g. kbd badges).
+document.addEventListener('mouseover', (e) => {
+  const el = (e.target as Element).closest?.('[data-help]');
+  if (el && helpShownFor !== el) showHelpHint(el);
+});
+document.addEventListener('mouseout', (e) => {
+  const el = (e.target as Element).closest?.('[data-help]');
+  if (!el) return;
+  // Moving onto a child inside the same hint element is not a leave.
+  const to = (e.relatedTarget as Element | null)?.closest?.('[data-help]');
+  if (to !== el) hideHelpHint(el);
+});
+// Touch has no hover: a 450ms press shows the hint and swallows the
+// synthetic click so the control itself does not fire; releasing hides
+// it again. Short taps pass through untouched.
+document.addEventListener('touchstart', (e) => {
+  window.clearTimeout(helpTouchTimer);
+  helpSuppressClick = false;
+  const el = (e.target as Element).closest?.('[data-help]');
+  if (!el) return;
+  helpTouchTimer = window.setTimeout(() => {
+    helpSuppressClick = true;
+    showHelpHint(el);
+  }, 450);
+}, { passive: true });
+document.addEventListener('touchmove', () => {
+  window.clearTimeout(helpTouchTimer);
+}, { passive: true });
+document.addEventListener('touchend', (e) => {
+  window.clearTimeout(helpTouchTimer);
+  const el = (e.target as Element).closest?.('[data-help]');
+  if (el) hideHelpHint(el);
+}, { passive: true });
+document.addEventListener('touchcancel', () => {
+  window.clearTimeout(helpTouchTimer);
+  helpSuppressClick = false;
+}, { passive: true });
+document.addEventListener('click', (e) => {
+  if (!helpSuppressClick) return;
+  helpSuppressClick = false;
+  e.preventDefault();
+  e.stopPropagation();
+}, true);
+
 // ── UI buttons ───────────────────────────────────────────────────────────────
 const pauseBtn       = document.getElementById('pause-btn')      as HTMLButtonElement;
 const lysinBtn       = document.getElementById('lysin-btn')      as HTMLButtonElement;
@@ -727,6 +803,9 @@ function toggleView(): void {
   const desc = viewMode === 'educational' ? 'legend + bonds + bezier membranes'
              : viewMode === 'microscope'  ? 'phase contrast (microscope slide)'
              :                              "Hutton's 2002 squares + straight bond lines";
+  // The ‹/› HUD toggle only docks inside the stats box in educational
+  // view — re-dock it for the new mode.
+  applyHudVisibility();
   logStatus(`View → ${label} (${desc})`);
 }
 
@@ -897,16 +976,38 @@ function toggleGame(): void {
 
 // ── HUD hide/show ─────────────────────────────────────────────────────────
 // The stats + legend block in the top-left corner can be collapsed to a
-// small arrow so it never obstructs the sim. The arrow stays in the
-// corner either way and the choice persists across sessions.
+// small arrow so it never obstructs the sim. While the HUD is drawn
+// (educational view) the arrow docks inside the stats box's top-right
+// corner; collapsed it floats in the canvas corner on its own. The
+// choice persists across sessions.
 const HUD_STATE_KEY = 'primordium-hud-v1';
-const HUD_SHIFT_CSS = 42; // CSS px to clear the 26px toggle + margins
 const hudToggleBtn = document.getElementById('hud-toggle') as HTMLButtonElement | null;
 let hudVisible = ((): boolean => {
   try { return localStorage.getItem(HUD_STATE_KEY) !== '0'; } catch { return true; }
 })();
+function positionHudToggle(): void {
+  if (!hudToggleBtn || !hudVisible || viewMode !== 'educational') return;
+  // Docked left-aligned inside the stats box, vertically centered next
+  // to the text. Convert internal px into CSS px — the button is fixed
+  // 26 CSS px while the canvas may be scaled (portrait mobile).
+  const s = (canvas.clientWidth || canvas.width) / canvas.width;
+  hudToggleBtn.style.left = `${(HUD_STATS_RECT.x + 8) * s}px`;
+  hudToggleBtn.style.top  = `${(HUD_STATS_RECT.y + HUD_STATS_RECT.h / 2) * s - 13}px`;
+}
 function applyHudVisibility(): void {
-  if (hudToggleBtn) hudToggleBtn.textContent = hudVisible ? '‹' : '›';
+  if (!hudToggleBtn) return;
+  hudToggleBtn.textContent = hudVisible ? '‹' : '›';
+  const docked = hudVisible && viewMode === 'educational';
+  // Docked inside the dark stats box the backdrop-blend turns the button
+  // almost black — the .docked style gives it the same perceived color
+  // and transparency as when it floats over the bright canvas.
+  hudToggleBtn.classList.toggle('docked', docked);
+  if (docked) {
+    positionHudToggle();
+  } else {
+    hudToggleBtn.style.left = '8px';
+    hudToggleBtn.style.top  = '8px';
+  }
 }
 if (hudToggleBtn) {
   hudToggleBtn.addEventListener('click', () => {
@@ -2798,8 +2899,9 @@ function toggleFullscreen(): void {
     if (fsToggle) fsToggle.textContent = '⛶';
   }
   // The display box changes with the fullscreen class — let the internal
-  // resolution follow on layouts that track the display size.
-  requestAnimationFrame(resizeCanvasToDisplay);
+  // resolution follow on layouts that track the display size, and move
+  // the docked HUD toggle with it.
+  requestAnimationFrame(() => { resizeCanvasToDisplay(); applyHudVisibility(); });
 }
 if (fsToggle) {
   fsToggle.addEventListener('click', toggleFullscreen);
@@ -2978,10 +3080,10 @@ function loop(): void {
         overlayCtx.setTransform(1, 0, 0, 1, 0, 0);
       }
       if (viewMode === 'educational' && hudVisible) {
-        // Shift is in canvas-internal px — the toggle button is a
-        // fixed CSS size, so scale it by the current display factor.
-        const shift = HUD_SHIFT_CSS * canvas.width / (canvas.clientWidth || canvas.width);
-        drawHUD2D(overlayCtx, snap.iterations, snap.atomCount, snap.atoms, shift);
+        drawHUD2D(overlayCtx, snap.iterations, snap.atomCount, snap.atoms);
+        // The stats box width tracks its text — re-dock the toggle each
+        // frame so it stays pinned to the box's top-right corner.
+        positionHudToggle();
       }
     } else if (ctx2d) {
       draw2D(ctx2d, snap.atoms, snap.atomCount, snap.loops, snap.bonds, snap.droplets, bacteriaView, snap.epoch, camera, GRID_W, GRID_H);
@@ -2994,8 +3096,8 @@ function loop(): void {
       if (viewMode === 'educational' && hudVisible) {
         // HUD always in screen space — reset transform first
         ctx2d.setTransform(1, 0, 0, 1, 0, 0);
-        const shift = HUD_SHIFT_CSS * canvas.width / (canvas.clientWidth || canvas.width);
-        drawHUD2D(ctx2d, snap.iterations, snap.atomCount, snap.atoms, shift);
+        drawHUD2D(ctx2d, snap.iterations, snap.atomCount, snap.atoms);
+        positionHudToggle();
       }
     }
     // Selection halo — draws the yellow ring on whichever surface is

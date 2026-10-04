@@ -778,25 +778,42 @@ export function drawArenaBorder(
   ctx.restore();
 }
 
-export function drawHUD2D(ctx: CanvasRenderingContext2D, iterations: number, atomCount: number, atoms: Float32Array, ox = 0): void {
+// Stats HUD box geometry in canvas-internal px — shared with main.ts,
+// which docks the ‹/› HTML toggle button inside the box's top-right
+// corner while the HUD is visible. drawHUD2D keeps .w in sync with the
+// measured text width each frame.
+export const HUD_STATS_RECT = { x: 6, y: 6, w: 240, h: 42 };
+const HUD_LEGEND_W = 240;
+
+export function drawHUD2D(ctx: CanvasRenderingContext2D, iterations: number, atomCount: number, atoms: Float32Array): void {
   ctx.save();
-  ctx.translate(ox, 0);
   let bonded = 0;
   for (let i = 0; i < atomCount; i++) {
     if ((atoms[i * STRIDE + 3] | 0) & 1) bonded++;
   }
-  ctx.fillStyle = 'rgba(0,0,0,0.6)';
-  ctx.fillRect(6, 6, 220, 42);
-  ctx.fillStyle = '#ffffff';
   ctx.font = '12px monospace';
-  ctx.fillText(`iter:   ${iterations.toLocaleString()}`, 14, 22);
-  ctx.fillText(`bonded: ${bonded}   free: ${atomCount - bonded}`, 14, 38);
+  const line1 = `iter:   ${iterations.toLocaleString()}`;
+  const line2 = `bonded: ${bonded} free: ${atomCount - bonded}`;
+  // The ‹/› toggle docks left-aligned inside the box, next to the text —
+  // the text sits right of a reserved strip (26 CSS px button + 8px
+  // inset), converted into canvas-internal px via the display scale.
+  // The box hugs its content: at most as wide as the legend, growing
+  // past it only when the numbers themselves need the room.
+  const s = ctx.canvas.clientWidth ? ctx.canvas.clientWidth / ctx.canvas.width : 1;
+  const textX = HUD_STATS_RECT.x + 8 + 34 / s + 6;
+  const textW = Math.max(ctx.measureText(line1).width, ctx.measureText(line2).width);
+  HUD_STATS_RECT.w = textX - HUD_STATS_RECT.x + textW + 8;
+  ctx.fillStyle = 'rgba(0,0,0,0.6)';
+  ctx.fillRect(HUD_STATS_RECT.x, HUD_STATS_RECT.y, HUD_STATS_RECT.w, HUD_STATS_RECT.h);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(line1, textX, 22);
+  ctx.fillText(line2, textX, 38);
 
-  const PAD = 10, SZ = 10, ROW = 18, W = 240;
+  const PAD = 10, SZ = 10, ROW = 18;
   const H = PAD * 2 + LEGEND.length * ROW - 2;
   const lx = 6, ly = 56;
   ctx.fillStyle = 'rgba(0,0,0,0.6)';
-  ctx.fillRect(lx, ly, W, H);
+  ctx.fillRect(lx, ly, HUD_LEGEND_W, H);
   ctx.font = '11px monospace';
   LEGEND.forEach(({ color, label, isLine }, i) => {
     const y = ly + PAD + i * ROW;

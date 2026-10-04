@@ -193,3 +193,23 @@ varies, "all your cells were lysed".
 When toggling states, the menu buttons must show the new states, also
 when restoring after the game. Right now e.g. the hydrolysis button
 stays active when starting a game although it is actually off.
+
+## 26-10-04 12:05
+- At the collapsible stats/legend HUD with corner toggle: the small
+  </> arrow in the top-left corner should be inside the upper square
+  on the right, when the stats are visible.
+- The help texts that appear at the bottom when pressing a button
+  should already appear on mouseover and disappear again — the text
+  that was there before must be remembered. The help texts should
+  also appear on long-touch on mobile.
+
+## 26-10-04 12:35
+The HUD toggle is too dark — it should have the same color and
+transparency as when collapsed. Also the left padding before the
+"free" value is too large; the upper box should be at most as wide
+as the legend below (unless the text no longer fits because the
+numbers get too large).
+
+## 26-10-04 12:55
+The minimize button must be left-aligned inside the upper box, next
+to the text.

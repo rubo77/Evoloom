@@ -234,6 +234,13 @@
       font-size: 0.75rem;
       z-index: 12;
     }
+    /* Docked inside the dark stats box, the dark translucent face would
+       blend to near-black — this matches the perceived medium-gray the
+       button has when floating over the bright canvas. */
+    .hud-toggle.docked {
+      background: rgba(145, 145, 145, 0.55);
+      border-color: rgba(255, 255, 255, 0.18);
+    }
     /* Active state for the menu toggle when panel is open: subtle gold tint */
     .canvas-tool-btn.active {
       background: rgba(212, 166, 79, 0.16);
@@ -1548,14 +1555,14 @@
     <canvas id="canvas"></canvas>
     <canvas id="overlay"></canvas>
     <div class="canvas-tools">
-      <button id="menu-toggle" class="canvas-tool-btn canvas-tool-btn--menu" aria-label="Toggle controls panel" title="Controls (M)">
+      <button id="menu-toggle" class="canvas-tool-btn canvas-tool-btn--menu" aria-label="Toggle controls panel" title="Controls (M)" data-help="Open / close the controls panel">
         <span class="menu-icon">☰</span>
         <span class="menu-label">Controls</span>
       </button>
-      <button id="fs-toggle" class="canvas-tool-btn fs-toggle" aria-label="Toggle fullscreen" title="Fullscreen">⛶</button>
-      <button id="tutorial-btn" class="canvas-tool-btn" aria-label="Interactive tutorial" title="Interactive tutorial">?</button>
+      <button id="fs-toggle" class="canvas-tool-btn fs-toggle" aria-label="Toggle fullscreen" title="Fullscreen" data-help="Toggle fullscreen">⛶</button>
+      <button id="tutorial-btn" class="canvas-tool-btn" aria-label="Interactive tutorial" title="Interactive tutorial" data-help="Start the guided interactive tutorial">?</button>
     </div>
-    <button id="hud-toggle" class="canvas-tool-btn hud-toggle" aria-label="Toggle stats overlay" title="Hide / show stats overlay">‹</button>
+    <button id="hud-toggle" class="canvas-tool-btn hud-toggle" aria-label="Toggle stats overlay" title="Hide / show stats overlay" data-help="Hide / show the stats &amp; legend overlay">‹</button>
     <div id="game-overlay">
       <div id="game-overlay-title"></div>
       <div id="game-overlay-sub"></div>
@@ -1733,13 +1740,13 @@
     <div class="card card--view always-visible">
       <div class="card__label">View · Playback</div>
       <div class="card__row">
-        <button id="pause-btn">Pause<span class="kbd-badge">␣</span></button>
-        <button id="view-btn">View: Educational<span class="kbd-badge">V</span></button>
-        <button id="rec-btn">● REC<span class="kbd-badge">R</span></button>
+        <button id="pause-btn" data-help="Pause / resume the simulation">Pause<span class="kbd-badge">␣</span></button>
+        <button id="view-btn" data-help="Cycle view — educational · classic · microscope">View: Educational<span class="kbd-badge">V</span></button>
+        <button id="rec-btn" data-help="Record the canvas to a .webm video">● REC<span class="kbd-badge">R</span></button>
       </div>
       <div class="card__row">
-        <button id="fs-btn">⛶ Fullscreen</button>
-        <button id="tutorial-btn2">🎓 Tutorial</button>
+        <button id="fs-btn" data-help="Toggle fullscreen">⛶ Fullscreen</button>
+        <button id="tutorial-btn2" data-help="Start the guided interactive tutorial">🎓 Tutorial</button>
       </div>
     </div>
 
@@ -1747,14 +1754,14 @@
     <div class="card card--brushes always-visible">
       <div class="card__label">Brushes · Tools</div>
       <div class="card__row">
-        <button id="soup-brush-btn">🖌 Soup: <span class="brush-state">OFF</span><span class="kbd-badge">B</span></button>
-        <button id="water-brush-btn">💧 Water: <span class="brush-state">OFF</span><span class="kbd-badge">W</span></button>
-        <button id="clear-water-btn">Clear water<span class="kbd-badge">C</span></button>
+        <button id="soup-brush-btn" data-help="Soup brush — click &amp; drag to seed loose atoms">🖌 Soup: <span class="brush-state">OFF</span><span class="kbd-badge">B</span></button>
+        <button id="water-brush-btn" data-help="Water brush — click to drop water; droplets fuse">💧 Water: <span class="brush-state">OFF</span><span class="kbd-badge">W</span></button>
+        <button id="clear-water-btn" data-help="Remove all water droplets">Clear water<span class="kbd-badge">C</span></button>
       </div>
       <div class="card__row">
-        <button id="select-btn">🎯 Select: <span class="brush-state">OFF</span><span class="kbd-badge">S</span></button>
-        <button id="follow-btn" disabled>🎥 Follow: <span class="brush-state">OFF</span><span class="kbd-badge">F</span></button>
-        <button id="lysin-btn">Lysin: OFF<span class="kbd-badge">P</span></button>
+        <button id="select-btn" data-help="Select atoms — drag a box, click a single atom, Delete removes">🎯 Select: <span class="brush-state">OFF</span><span class="kbd-badge">S</span></button>
+        <button id="follow-btn" disabled data-help="Camera follows the selected atoms — panning releases">🎥 Follow: <span class="brush-state">OFF</span><span class="kbd-badge">F</span></button>
+        <button id="lysin-btn" data-help="Seed lysin — dissolves membranes on contact">Lysin: OFF<span class="kbd-badge">P</span></button>
       </div>
     </div>
 
@@ -1762,7 +1769,7 @@
     <div class="card card--world">
       <div class="card__label">World · Replenishment</div>
       <div class="card__row">
-        <button id="drip-btn">💧 Drip: OFF</button>
+        <button id="drip-btn" data-help="Periodically respawn soup &amp; water into the sandbox">💧 Drip: OFF</button>
         <span class="inline-sliders" id="drip-sliders">
           <label>soup
             <input type="range" id="drip-soup-slider" min="100" max="3000" value="700" step="50">
@@ -1778,12 +1785,12 @@
         <span class="ctl-label">⏩ Burn</span>
         <input id="burn-iters" type="number" value="100000" min="1000" step="10000">
         <span class="ctl-label">iters</span>
-        <button id="burn-btn">Start</button>
+        <button id="burn-btn" data-help="Fast-forward the simulation without rendering">Start</button>
       </div>
       <div class="card__row">
         <span class="ctl-label">🎲 seed</span>
         <input id="seed-input" type="number" value="1" min="0" step="1">
-        <button id="seed-apply-btn">Reseed</button>
+        <button id="seed-apply-btn" data-help="Restart the world with this RNG seed">Reseed</button>
       </div>
     </div>
 
@@ -1810,7 +1817,7 @@
     <div class="card card--mutation">
       <div class="card__label">🧪 Lab</div>
       <div class="card__row">
-        <button id="noise-btn">🧬 Noise: OFF<span class="kbd-badge">N</span></button>
+        <button id="noise-btn" data-help="Noise — imperfect copying, decay &amp; bond failures">🧬 Noise: OFF<span class="kbd-badge">N</span></button>
       </div>
       <span class="inline-sliders" id="noise-sliders">
         <label>copy
@@ -1827,7 +1834,7 @@
         </label>
       </span>
       <div class="card__row" style="margin-top: 8px;">
-        <button id="hydro-btn">💧🧪 Hydrolysis: OFF<span class="kbd-badge">H</span></button>
+        <button id="hydro-btn" data-help="Hydrolysis — water atoms in droplets slowly break bonds">💧🧪 Hydrolysis: OFF<span class="kbd-badge">H</span></button>
       </div>
       <span class="inline-sliders" id="hydro-sliders">
         <label>rate
@@ -1840,8 +1847,8 @@
         </label>
       </span>
       <div class="card__row" style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.08);">
-        <button id="inspect-btn">🔬 Open inspector<span class="kbd-badge">I</span></button>
-        <button id="paste-btn">📥 Paste from JSON</button>
+        <button id="inspect-btn" data-help="Open the inspector for the selected atoms">🔬 Open inspector<span class="kbd-badge">I</span></button>
+        <button id="paste-btn" data-help="Paste atoms from a JSON selection file">📥 Paste from JSON</button>
       </div>
       <div class="card__row">
         <span class="ctl-label" id="selection-count">No selection · use the Select brush, then click any atom</span>
@@ -1851,7 +1858,7 @@
            is never modified; user definitions are appended on top and
            cleared cleanly on every chemistry rebuild. -->
       <div class="card__row" style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.08);">
-        <button id="lab-open-btn">⚗️ Custom chemistry editor</button>
+        <button id="lab-open-btn" data-help="Define custom atoms &amp; reaction rules">⚗️ Custom chemistry editor</button>
       </div>
       <div class="card__row">
         <span class="ctl-label" id="custom-summary">0 custom atoms · 0 custom rules</span>
@@ -1862,22 +1869,22 @@
     <div class="card card--archive">
       <div class="card__label">Archive · Export</div>
       <div class="card__row">
-        <button id="save-btn">💾 Save</button>
-        <button id="load-btn">📂 Load</button>
+        <button id="save-btn" data-help="Download the full sim state as JSON">💾 Save</button>
+        <button id="load-btn" data-help="Load a saved sim state">📂 Load</button>
       </div>
       <div class="card__row">
-        <button id="reset-btn" class="danger">♻️ Reset simulation</button>
+        <button id="reset-btn" class="danger" data-help="Reset to a fresh arena">♻️ Reset simulation</button>
       </div>
       <div class="card__row">
         <span class="ctl-label">📊 stats</span>
-        <button id="csv-btn">CSV</button>
-        <button id="csv-clear-btn">Clear</button>
+        <button id="csv-btn" data-help="Export the stats log as CSV">CSV</button>
+        <button id="csv-clear-btn" data-help="Clear the stats log">Clear</button>
         <span id="csv-count" class="ctl-label">0 rows</span>
       </div>
       <div class="card__row">
         <span class="ctl-label">📜 events</span>
-        <button id="events-dl-btn">CSV</button>
-        <button id="events-clear-btn">Clear</button>
+        <button id="events-dl-btn" data-help="Export the mutation event log as CSV">CSV</button>
+        <button id="events-clear-btn" data-help="Clear the event log">Clear</button>
         <span id="events-count" class="ctl-label">0 events</span>
       </div>
     </div>
@@ -1886,7 +1893,7 @@
     <div class="card card--game">
       <div class="card__label">Play Mode</div>
       <div class="card__row">
-        <button id="game-btn">🦠 Steer a microbe<span class="kbd-badge">G</span></button>
+        <button id="game-btn" data-help="Play mode — steer your green microbe with WASD">🦠 Steer a microbe<span class="kbd-badge">G</span></button>
       </div>
     </div>
 

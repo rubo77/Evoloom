@@ -1343,6 +1343,27 @@
       }
     }
 
+    /* ── FLUID CANVAS — the sim fills the window ─────────────────────
+       On landscape layouts the canvas always takes the full available
+       width and whatever height remains under the title/status chrome
+       (~165px desktop, ~130px mobile). The internal resolution tracks
+       the display box 1:1 (resizeCanvasToDisplay in main.ts), so a
+       resize reframes the arena instead of scrolling or distorting.
+       Portrait mobile keeps the fixed 800×1400 aspect; pseudo-
+       fullscreen sizes itself. */
+    @media (min-width: 901px) and (pointer: fine) {
+      body:not(.canvas-fullscreen) #canvas {
+        width: calc(100vw - 32px) !important;
+        height: max(100px, calc(100vh - 165px)) !important;
+      }
+    }
+    @media (max-width: 900px) and (orientation: landscape),
+           (pointer: coarse) and (orientation: landscape) {
+      body:not(.canvas-fullscreen) #canvas {
+        height: max(100px, calc(100vh - 130px)) !important;
+      }
+    }
+
     /* ──────────────────────────────────────────────────────────────────
        PSEUDO-FULLSCREEN — body class toggled by the ⛶ button.
        Hides everything except the canvas frame and makes it fill 100vw/100vh.

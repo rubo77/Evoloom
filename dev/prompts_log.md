@@ -159,3 +159,12 @@ Clarification: this is only about how the arena is centered when fully
 zoomed out — it must be aligned to the top-left, that is all that needs
 to change. And only the area outside the arena *within the canvas*
 should be gray instead of white.
+
+## 26-10-04 04:05
+On wide screens with a height under 850px the whole HTML page starts
+scrolling vertically — that must not happen. The canvas seems to have
+a minimum height; it must be much smaller, ~100px or so.
+
+## 26-10-04 04:35
+That's not a good solution — the sim screen should always use the full
+width, even at low heights.

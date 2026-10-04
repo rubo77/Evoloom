@@ -20,13 +20,15 @@ test('follow mode tracks selection and yields to manual pan', async ({ page }) =
   await page.keyboard.press('m');
   await expect(page.locator('#follow-btn')).toBeDisabled();
 
-  // Select a wide band across the arena's mid-height — the rigged cells
-  // live around world y≈1500 and drift, so a broad box always catches
-  // some (an empty box selects nothing and Follow refuses to start).
+  // Select across the whole visible canvas — at the initial fit-zoom the
+  // entire arena is on screen, so a full-canvas box catches the rigged
+  // cells wherever the fluid layout places them (an empty box selects
+  // nothing and Follow refuses to start).
+  const box = await page.locator('#canvas').boundingBox();
   await page.click('#select-btn');
-  await page.mouse.move(100, 420);
+  await page.mouse.move(box.x + 10, box.y + 10);
   await page.mouse.down();
-  await page.mouse.move(1240, 540, { steps: 5 });
+  await page.mouse.move(box.x + box.width - 10, box.y + box.height - 10, { steps: 5 });
   await page.mouse.up();
   await page.waitForTimeout(300);
   await expect(page.locator('#follow-btn')).toBeEnabled();
@@ -39,9 +41,9 @@ test('follow mode tracks selection and yields to manual pan', async ({ page }) =
   await expect(page.locator('#follow-btn')).toContainText('ON');
 
   // Manual pan takes the camera back → Follow releases.
-  await page.mouse.move(640, 360);
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();
-  await page.mouse.move(500, 300, { steps: 4 });
+  await page.mouse.move(box.x + box.width / 2 - 140, box.y + box.height / 2 - 60, { steps: 4 });
   await page.mouse.up();
   await expect(page.locator('#follow-btn')).toContainText('OFF');
 

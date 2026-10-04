@@ -47,8 +47,6 @@ let _displayX = new Float32Array(0);
 let _displayY = new Float32Array(0);
 let _displayInit: Uint8Array = new Uint8Array(0);
 let _emaEpoch = -1;
-let _canvasW = 0;
-let _canvasH = 0;
 
 // Reusable CPU-side scratch
 const MAX_LOOP = 600;
@@ -438,8 +436,6 @@ export async function initGPU(canvas: HTMLCanvasElement): Promise<boolean> {
   _format = format;
   _pipelines = buildPipelines(device, format);
   _buffers = buildBuffers(device);
-  _canvasW = canvas.width;
-  _canvasH = canvas.height;
   return true;
 }
 
@@ -524,14 +520,15 @@ export function drawGPU(
   ensureDisplay(atomCount, epoch);
   smoothPositions(atoms, atomCount);
 
-  const view = ctx.getCurrentTexture().createView();
+  const tex = ctx.getCurrentTexture();
+  const view = tex.createView();
   const cmd = device.createCommandEncoder();
 
   // Uniforms: resolution + view + camera + zoom + grid bounds (48 bytes)
   const u = new ArrayBuffer(48);
   const uF = new Float32Array(u);
   const uU = new Uint32Array(u);
-  uF[0] = _canvasW; uF[1] = _canvasH;
+  uF[0] = tex.width; uF[1] = tex.height;
   uU[2] = bacteriaView ? 1 : 0;
   // _pad0 at uU[3]
   uF[4] = camera.x; uF[5] = camera.y;

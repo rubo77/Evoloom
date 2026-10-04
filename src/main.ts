@@ -59,8 +59,10 @@ const camera = {
   zoom: fitZoom,
 };
 // The arena always fills the viewport — zooming out past fit would
-// show empty margin around the grid.
-const MIN_ZOOM = fitZoom;
+// show empty margin around the grid. MIN_ZOOM tracks the canvas size:
+// resizeCanvasToDisplay recomputes it when the internal resolution
+// follows a window resize.
+let MIN_ZOOM = fitZoom;
 const MAX_ZOOM = 6;
 
 // Keep the camera inside the arena: pin to the top-left on the axis
@@ -72,6 +74,37 @@ function clampCameraToArena(): void {
   camera.x = vw >= GRID_W ? 0 : Math.max(0, Math.min(GRID_W - vw, camera.x));
   camera.y = vh >= GRID_H ? 0 : Math.max(0, Math.min(GRID_H - vh, camera.y));
 }
+
+// ── Fluid canvas sizing ───────────────────────────────────────────────
+// On landscape layouts the canvas display box fills the window width
+// and the height left under the page chrome (see the FLUID CANVAS media
+// queries in index.html). The internal resolution tracks the box 1:1,
+// so resizing only reframes the arena — nothing stretches. Portrait
+// mobile is excluded: it keeps the fixed 800×1400 internal resolution
+// with CSS aspect scaling.
+const FILL_MQ = '(min-width: 901px) and (pointer: fine), (orientation: landscape)';
+function resizeCanvasToDisplay(): void {
+  if (!window.matchMedia(FILL_MQ).matches) return;
+  const w = Math.max(1, Math.round(canvas.clientWidth));
+  const h = Math.max(1, Math.round(canvas.clientHeight));
+  if (w === canvas.width && h === canvas.height) return;
+  canvas.width = overlay.width = w;
+  canvas.height = overlay.height = h;
+  // A camera sitting at the old minimum stays fully zoomed out on the
+  // new box; a zoomed-in camera keeps its zoom unless it now exceeds
+  // the allowed range.
+  const wasFullyOut = camera.zoom <= MIN_ZOOM + 1e-9;
+  MIN_ZOOM = Math.min(w / GRID_W, h / GRID_H);
+  camera.zoom = wasFullyOut ? MIN_ZOOM
+    : Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, camera.zoom));
+  clampCameraToArena();
+}
+resizeCanvasToDisplay();
+let _resizeRaf = 0;
+window.addEventListener('resize', () => {
+  if (_resizeRaf) return;
+  _resizeRaf = requestAnimationFrame(() => { _resizeRaf = 0; resizeCanvasToDisplay(); });
+});
 
 // ── Camera follow — tracks a captured set of atoms by ID ──────────────────
 // On activation the atom IDs of the current selection (snapshot flag bit4)
@@ -2667,6 +2700,9 @@ function toggleFullscreen(): void {
     body.classList.remove('canvas-fullscreen');
     if (fsToggle) fsToggle.textContent = '⛶';
   }
+  // The display box changes with the fullscreen class — let the internal
+  // resolution follow on layouts that track the display size.
+  requestAnimationFrame(resizeCanvasToDisplay);
 }
 if (fsToggle) {
   fsToggle.addEventListener('click', toggleFullscreen);

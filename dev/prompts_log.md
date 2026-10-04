@@ -282,3 +282,7 @@ button stays under Labs and opens the editor by default since the
 editor is only for very experienced users. Also move the tutorial
 button into the new block and shift the play mode block up above
 physics. Plan first.
+## 26-10-05 08:15
+Quicksave and quickload need different keyboard shortcuts that also
+work well on QWERTZ. Also link the online version on eclabs in the
+README.

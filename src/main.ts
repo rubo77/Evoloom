@@ -1260,7 +1260,7 @@ function quickSave(): void {
 }
 function quickLoad(): void {
   if (!quicksaveSlot) {
-    logStatus('No quicksave to restore — press [ first to save current state');
+    logStatus('No quicksave to restore — press , first to save current state');
     return;
   }
   send({ type: 'loadSave', state: quicksaveSlot });
@@ -2971,7 +2971,7 @@ document.addEventListener('keydown', (e) => {
   // fire the soup brush — a real footgun in the previous version.
   const target = e.target as HTMLElement | null;
   const isTyping = !!target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || (target as HTMLElement).isContentEditable);
-  const isShortcutKey = /^Key[A-Z]$|^Bracket(Left|Right)$/.test(e.code);
+  const isShortcutKey = /^Key[A-Z]$|^Comma$|^Period$/.test(e.code);
   if (isTyping && isShortcutKey) return;
 
   // In game mode, WASD is reserved for the player. We still allow other shortcuts.
@@ -3009,8 +3009,8 @@ document.addEventListener('keydown', (e) => {
   if (e.code === 'KeyN')  { toggleNoise(); }
   if (e.code === 'KeyH')  { toggleHydro(); }
   if (e.code === 'KeyM')  { e.preventDefault(); togglePanel(); }
-  if (e.code === 'BracketLeft')  { e.preventDefault(); quickSave(); }
-  if (e.code === 'BracketRight') { e.preventDefault(); quickLoad(); }
+  if (e.code === 'Comma')        { e.preventDefault(); quickSave(); }
+  if (e.code === 'Period')       { e.preventDefault(); quickLoad(); }
   if (e.code === 'KeyF')         { e.preventDefault(); setFollow(!followIds); }
   if (e.code === 'KeyQ')         { e.preventDefault(); freezeAndCapture(); }
   if ((e.code === 'Delete' || e.code === 'Backspace') && brushMode === 'select') {

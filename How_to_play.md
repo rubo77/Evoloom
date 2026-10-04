@@ -186,9 +186,9 @@ Select an atom (`Select atom` brush), then open with `I`:
 | `G` | play mode (steer a microbe) |
 | `N` | noise on / off |
 | `H` | hydrolysis on / off |
-| `[` | quicksave |
-| `]` | quickload |
-| `F` | freeze (pause + zero noise + quicksave) |
+| `,` | quicksave |
+| `.` | quickload |
+| `Q` | freeze (pause + zero noise + quicksave) |
 | `Del` | delete selected atom (in Select mode) |
 | `Esc` | close panel / back to pan |
 | drag | pan camera |

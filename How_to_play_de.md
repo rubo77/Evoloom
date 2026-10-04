@@ -206,9 +206,9 @@ Atom auswählen (`Select atom`-Pinsel), dann mit `I` öffnen:
 | `G` | Spielmodus (Mikrobe steuern) |
 | `N` | Noise an/aus |
 | `H` | Hydrolyse an/aus |
-| `[` | Schnellspeichern |
-| `]` | Schnellladen |
-| `F` | Einfrieren (Pause + Noise auf 0 + Schnellspeichern) |
+| `,` | Schnellspeichern |
+| `.` | Schnellladen |
+| `Q` | Einfrieren (Pause + Noise auf 0 + Schnellspeichern) |
 | `Entf` | ausgewähltes Atom löschen (im Select-Modus) |
 | `Esc` | Panel schließen / zurück zum Pannen |
 | Ziehen | Kamera pannen |

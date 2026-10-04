@@ -178,3 +178,9 @@ update the position every 0.5s with a 0.5s ease.
 
 ## 26-10-04 08:40
 Zooming in and out always turns follow off — that must not happen.
+
+## 26-10-04 09:10
+When the game starts, one atom in the new green controllable cell must
+be auto-selected and follow switched on. The follow toggle gets the F
+shortcut, so freeze needs another one — why is it called "freeze"
+anyway? Suggest a free, fitting shortcut.

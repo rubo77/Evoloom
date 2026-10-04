@@ -275,6 +275,9 @@ function setupGame(): void {
   for (let i = beforePlayer; i < afterPlayer; i++) {
     grid.getCells()[i].playerControlled = true;
   }
+  // Pre-select one player atom — the main thread reads the selected flag
+  // from the next snapshot and arms camera follow on the microbe.
+  selectedSet.add(grid.getCells()[beforePlayer]);
 
   // 5 opponent cells scattered around (avoiding the very center)
   for (let k = 0; k < 5; k++) {
@@ -963,12 +966,14 @@ self.onmessage = (e: MessageEvent<unknown>) => {
       gameStatus = 0;
       noEnemyStartIter = -1;
       setupGame();
+      postSnapshotIfPaused();
       return;
     case 'endGame':
       inGame = false;
       gameStatus = 0;
       noEnemyStartIter = -1;
       setupRigged();
+      postSnapshotIfPaused();
       return;
     case 'setPlayerInput':
       grid.playerInputX = msg.x;

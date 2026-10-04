@@ -152,6 +152,9 @@ window.addEventListener('resize', () => {
 // clearing the selection afterwards does not drop the track. Pure
 // main-thread work — no extra worker messages needed.
 let followIds: Set<number> | null = null;
+// Game start pre-selects a player atom in the worker — this flag arms
+// follow as soon as that selection arrives in a snapshot.
+let armFollowOnSelection = false;
 const followBtn = document.getElementById('follow-btn') as HTMLButtonElement | null;
 
 function setFollow(on: boolean): void {
@@ -170,7 +173,8 @@ function setFollow(on: boolean): void {
   } else {
     followIds = null;
   }
-  if (followBtn) followBtn.textContent = `🎥 Follow: ${followIds ? 'ON' : 'OFF'}`;
+  const followState = followBtn?.querySelector<HTMLElement>('.brush-state');
+  if (followState) followState.textContent = followIds ? 'ON' : 'OFF';
 }
 if (followBtn) followBtn.addEventListener('click', () => setFollow(!followIds));
 
@@ -862,6 +866,14 @@ function toggleGame(): void {
   gameBtn.textContent = gameMode ? '🦠 Exit game' : '🦠 Steer a microbe';
   gameBtn.classList.toggle('active', gameMode);
   send({ type: gameMode ? 'startGame' : 'endGame' });
+  if (gameMode) {
+    // The worker pre-selects a player atom in setupGame; the snapshot
+    // loop arms follow once that flag arrives.
+    armFollowOnSelection = true;
+  } else {
+    armFollowOnSelection = false;
+    setFollow(false);
+  }
   keyState.w = keyState.a = keyState.s = keyState.d = false;
   send({ type: 'setPlayerInput', x: 0, y: 0 });
   applyGameModeUI();
@@ -2264,7 +2276,7 @@ function freezeAndCapture(): void {
     pushHydroState();
   }
   quickSave();
-  logStatus('🧊 FREEZE — paused, all noise/hydrolysis off, quicksaved. Press F to resume + reload settings.');
+  logStatus('🧊 FREEZE — paused, all noise/hydrolysis off, quicksaved. Press Q to resume + reload settings.');
 }
 
 const loadFileInput = document.createElement('input');
@@ -2837,7 +2849,8 @@ document.addEventListener('keydown', (e) => {
   if (e.code === 'KeyM')  { e.preventDefault(); togglePanel(); }
   if (e.code === 'BracketLeft')  { e.preventDefault(); quickSave(); }
   if (e.code === 'BracketRight') { e.preventDefault(); quickLoad(); }
-  if (e.code === 'KeyF')         { e.preventDefault(); freezeAndCapture(); }
+  if (e.code === 'KeyF')         { e.preventDefault(); setFollow(!followIds); }
+  if (e.code === 'KeyQ')         { e.preventDefault(); freezeAndCapture(); }
   if ((e.code === 'Delete' || e.code === 'Backspace') && brushMode === 'select') {
     e.preventDefault();
     send({ type: 'deleteSelected' });
@@ -2906,6 +2919,17 @@ function loop(): void {
   snapTick();
   const snap = lastSnapshot;
   if (snap) {
+    // Pending game-start arm: as soon as the pre-selected player atom
+    // shows up in a snapshot, capture it for camera follow.
+    if (armFollowOnSelection && followIds === null) {
+      for (let i = 0; i < snap.atomCount; i++) {
+        if (((snap.atoms[i * STRIDE + 3] | 0) & 16) !== 0) {
+          setFollow(true);
+          armFollowOnSelection = false;
+          break;
+        }
+      }
+    }
     if (followIds) followTick(snap);
     if (gameMode) {
       if (snap.gameStatus === 1 || snap.gameStatus === 2) showGameOverlay(snap.gameStatus);

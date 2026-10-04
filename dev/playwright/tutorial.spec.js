@@ -58,7 +58,14 @@ test('guided tutorial gates task steps on real user actions', async ({ page }) =
   await expectStep(page, 'A real protocell');              // demo step
   await page.screenshot({ path: 'test-results/gt-protocell.png' });
 
-  await page.click('#tut-next');          // follow task — gated
+  // ── Task: open + close the atom dictionary (Learn card) ──
+  await page.click('#tut-next');
+  await expectStep(page, 'open the atom dictionary');
+  await expect(page.locator('#tut-next')).toBeDisabled(); // gated
+  await page.click('#dict-btn');
+  await expect(page.locator('#lab-tab-dictionary')).toBeVisible();
+  await expectStep(page, 'close the dictionary');
+  await page.keyboard.press('Escape');    // closes the lab, not the tour
   await expectStep(page, 'track the cell');
   await expect(page.locator('#tut-next')).toBeDisabled(); // gated
   await page.click('#follow-btn');        // user enables Follow

@@ -24,6 +24,11 @@ export interface TutorialDeps {
   openInspector(): void;
   closeInspector(): void;
   isInspectorOpen(): boolean;
+  /** Lab modal (chemistry editor + atom dictionary) state. */
+  isLabOpen(): boolean;
+  closeLab(): void;
+  /** Lab modal open with the dictionary tab selected. */
+  isDictionaryOpen(): boolean;
   viewCenterWorld(): { x: number; y: number };
   getBrush(): 'pan' | 'soup' | 'water' | 'select';
   /** Slide the viewport toward the nearest arena edge (scripted drops). */
@@ -224,6 +229,31 @@ const STEPS: Step[] = [
       <code>e-b-b-a-c-b-d-f</code> plus some loose cargo atoms.<br><br>
       Paused, every atom shows its <b>type letter + state number</b> —
       look closely. The yellow halo means the drop is <b>selected</b>.`,
+  },
+  {
+    title: 'Task: open the atom dictionary',
+    spotlight: '#dict-btn',
+    enter: (d) => d.openPanel(),
+    task: (d) => d.isDictionaryOpen(),
+    html: `What do all those letters and state numbers mean? Every atom
+      in the sim is explained in the <b>atom dictionary</b> — plain
+      English, including the gene machinery: <code>e</code> anchors the
+      strand to the membrane, <code>d</code> is the walking polymerase
+      enzyme, <code>f</code> ends the gene and triggers division.<br><br>
+      <span class="tutorial-task">TASK — in the panel's new
+      <b>Learn</b> card, hit <b>📖 Atom dictionary</b> and read the
+      entries for <code>a</code>, <code>d</code>, <code>e</code> and
+      <code>f</code>.</span><br><br>The <b>Editor</b> tab in the same
+      popup is for writing custom chemistries — advanced territory, no
+      need yet.`,
+  },
+  {
+    title: 'Task: close the dictionary',
+    task: (d) => !d.isLabOpen(),
+    html: `<span class="tutorial-task">TASK — close the dictionary: the
+      <b>✕</b> in its top-right corner, or <kbd>Esc</kbd>.</span><br><br>
+      Same rule as the inspector: <kbd>Esc</kbd> always closes the
+      topmost thing.`,
   },
   {
     title: 'Task: track the cell',
@@ -440,9 +470,9 @@ function goTo(next: number): void {
 function onKey(e: KeyboardEvent): void {
   if (!active) return;
   if (e.code === 'Escape') {
-    // Inspector (and similar overlays) own Esc while open — let the
-    // app's handler close them so the "close it yourself" task works.
-    if (deps!.isInspectorOpen()) return;
+    // Inspector and the lab modal own Esc while open — let the app's
+    // handler close them so the "close it yourself" tasks work.
+    if (deps!.isInspectorOpen() || deps!.isLabOpen()) return;
     e.stopPropagation();
     closeTutorial();
   } else if (e.code === 'ArrowRight' && taskDone) {
@@ -469,6 +499,7 @@ function closeTutorial(): void {
   deps!.setRate(savedRate);
   deps!.setPaused(savedPaused);
   if (deps!.isInspectorOpen()) deps!.closeInspector();
+  if (deps!.isLabOpen()) deps!.closeLab();
   deps!.setFollow(false);
   deps!.setBrush('pan');
   deps!.logStatus('Tutorial finished — the soup is yours.');

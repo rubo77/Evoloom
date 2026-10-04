@@ -445,6 +445,7 @@
     .card.card--archive  .card__label { color: var(--c-archive); }
     .card.card--game     .card__label { color: var(--c-life); }
     .card.card--view     .card__label { color: var(--c-primary); }
+    .card.card--learn    .card__label { color: var(--c-hydrolysis); }
     .card.card--physics  .card__label { color: var(--c-primary); }
 
     .card__row {
@@ -1746,7 +1747,16 @@
       </div>
       <div class="card__row">
         <button id="fs-btn" data-help="Toggle fullscreen">⛶ Fullscreen</button>
+      </div>
+    </div>
+
+    <!-- LEARN — guided tour and the atom dictionary, the onboarding entry
+         points; the actual chemistry editor stays in the Lab card -->
+    <div class="card card--learn always-visible">
+      <div class="card__label">Learn</div>
+      <div class="card__row">
         <button id="tutorial-btn2" data-help="Start the guided interactive tutorial">🎓 Tutorial</button>
+        <button id="dict-btn" data-help="Atom dictionary — every atom type &amp; what its states mean, in plain English">📖 Atom dictionary</button>
       </div>
     </div>
 
@@ -1757,11 +1767,11 @@
         <button id="soup-brush-btn" data-help="Soup brush — click &amp; drag to seed loose atoms">🖌 Soup: <span class="brush-state">OFF</span><span class="kbd-badge">B</span></button>
         <button id="water-brush-btn" data-help="Water brush — click to drop water; droplets fuse">💧 Water: <span class="brush-state">OFF</span><span class="kbd-badge">W</span></button>
         <button id="clear-water-btn" data-help="Remove all water droplets">Clear water<span class="kbd-badge">C</span></button>
+        <button id="lysin-btn" data-help="Seed lysin — dissolves membranes on contact">Lysin: OFF<span class="kbd-badge">P</span></button>
       </div>
       <div class="card__row">
         <button id="select-btn" data-help="Select atoms — drag a box, click a single atom, Delete removes">🎯 Select: <span class="brush-state">OFF</span><span class="kbd-badge">S</span></button>
         <button id="follow-btn" disabled data-help="Camera follows the selected atoms — panning releases">🎥 Follow: <span class="brush-state">OFF</span><span class="kbd-badge">F</span></button>
-        <button id="lysin-btn" data-help="Seed lysin — dissolves membranes on contact">Lysin: OFF<span class="kbd-badge">P</span></button>
       </div>
     </div>
 
@@ -1798,6 +1808,14 @@
       </div>
     </div>
 
+    <!-- PLAY MODE — distinct alive-green card -->
+    <div class="card card--game">
+      <div class="card__label">Play Mode</div>
+      <div class="card__row">
+        <button id="game-btn" data-help="Play mode — steer your green microbe with WASD">🦠 Steer a microbe<span class="kbd-badge">G</span></button>
+      </div>
+    </div>
+
     <!-- PHYSICS — thermodynamic sliders -->
     <div class="card card--physics">
       <div class="card__label">Physics</div>
@@ -1806,11 +1824,11 @@
           <input type="range" id="speed-slider" min="5" max="100" value="100" step="5">
           <span class="val" id="speed-val">100%</span>
         </label>
-        <label data-help="Soup — thermal energy of the free atom soup">soup
+        <label data-help="Soup heat — Brownian jitter speed of free atoms; hotter soup = more collisions, faster chemistry, more wobble on membranes">soup
           <input type="range" id="soup-slider" min="0" max="100" value="60">
           <span class="val" id="soup-val">60%</span>
         </label>
-        <label data-help="Damp — velocity damping on bonded atoms (membrane wobble)">damp
+        <label data-help="Damping — share of jiggle bonded atoms keep each step; 1.00 = membranes stay elastic and flickery, low = stiff, settled cell walls">damp
           <input type="range" id="damp-slider" min="50" max="100" value="100">
           <span class="val" id="damp-val">1.00</span>
         </label>
@@ -1890,14 +1908,6 @@
         <button id="events-dl-btn" data-help="Export the mutation event log as CSV">CSV</button>
         <button id="events-clear-btn" data-help="Clear the event log">Clear</button>
         <span id="events-count" class="ctl-label">0 events</span>
-      </div>
-    </div>
-
-    <!-- PLAY MODE — distinct alive-green card -->
-    <div class="card card--game">
-      <div class="card__label">Play Mode</div>
-      <div class="card__row">
-        <button id="game-btn" data-help="Play mode — steer your green microbe with WASD">🦠 Steer a microbe<span class="kbd-badge">G</span></button>
       </div>
     </div>
 

@@ -2137,13 +2137,15 @@ if (crClearBtn) crClearBtn.addEventListener('click', () => {
 const labModal   = document.getElementById('lab-modal') as HTMLDivElement | null;
 const labOpenBtn = document.getElementById('lab-open-btn') as HTMLButtonElement | null;
 const labCloseBtn = document.getElementById('lab-close')   as HTMLButtonElement | null;
-function openLab(): void {
+const dictBtn    = document.getElementById('dict-btn')    as HTMLButtonElement | null;
+function openLab(tab: 'editor' | 'dictionary' = 'editor'): void {
   if (!labModal) return;
   refreshCustomLists();
   refreshRuleTypeSelectors();
   refreshCRowVisibility();
   labModal.classList.add('shown');
   labModal.setAttribute('aria-hidden', 'false');
+  showLabTab(tab);
 }
 function closeLab(): void {
   if (!labModal) return;
@@ -2153,7 +2155,11 @@ function closeLab(): void {
 function isLabOpen(): boolean {
   return !!labModal && labModal.classList.contains('shown');
 }
-if (labOpenBtn) labOpenBtn.addEventListener('click', openLab);
+function isDictionaryOpen(): boolean {
+  return isLabOpen() && !!labTabDictionary && !labTabDictionary.hidden;
+}
+if (labOpenBtn) labOpenBtn.addEventListener('click', () => openLab('editor'));
+if (dictBtn) dictBtn.addEventListener('click', () => openLab('dictionary'));
 if (labCloseBtn) labCloseBtn.addEventListener('click', closeLab);
 
 // ── Lab tabs (Editor / Dictionary) ────────────────────────────────────────
@@ -3039,6 +3045,9 @@ function launchTutorial(): void {
     openInspector,
     closeInspector,
     isInspectorOpen,
+    isLabOpen,
+    closeLab,
+    isDictionaryOpen,
     viewCenterWorld: () => {
       const rect = canvas.getBoundingClientRect();
       return screenToWorld(rect.left + rect.width / 2, rect.top + rect.height / 2);

@@ -269,3 +269,16 @@ stutters.
 What would be useful is slowing everything down — that is what I
 imagine under "speed". What does the tutorial step do? Is that
 nonsense too?
+
+## 26-10-04 19:20
+What are damp and soup for? Explain more precisely and improve the
+hint texts; analyze what the effect in the code actually does.
+## 26-10-04 20:40
+The dictionary in the chemistry editor explains the genes really well
+— that should go into the tutorial, instructing the user to open it via
+a new menu block containing a new button that opens the chemistry
+editor popup but defaults to the dictionary tab. The chemistry editor
+button stays under Labs and opens the editor by default since the
+editor is only for very experienced users. Also move the tutorial
+button into the new block and shift the play mode block up above
+physics. Plan first.

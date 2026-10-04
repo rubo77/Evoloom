@@ -9,7 +9,7 @@ import { RADIUS } from './cell';
 import { STRIDE, unpackType, unpackState } from './snapshot';
 import {
   ATOM_COLORS, FALLBACK_COLOR, MEMBRANE_LINE, PREDATOR_LINE, PLAYER_LINE,
-  PREDATOR_UNIT, ALPHA, rgbHex, alphaHex, rgba,
+  PREDATOR_UNIT, ALPHA, MARGIN, rgbHex, alphaHex, rgba,
 } from './theme';
 
 // ── Visual constants ────────────────────────────────────────────────────────
@@ -252,6 +252,8 @@ export function draw2D(
   bacteriaView: boolean,
   epoch: number,
   camera: Camera,
+  gridW: number,
+  gridH: number,
 ): void {
   ensureDisplay(atomCount, epoch);
   smoothPositions(atoms, atomCount);
@@ -273,13 +275,20 @@ export function draw2D(
     grad.addColorStop(1,   '#b8b8b8');
     ctx.fillStyle = grad;
   } else {
-    ctx.fillStyle = '#ffffff';
+    ctx.fillStyle = rgbHex(MARGIN);
   }
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   // World→screen transform: screen_xy = (world_xy - camera) * zoom
   const z = camera.zoom;
   ctx.setTransform(z, 0, 0, z, -camera.x * z, -camera.y * z);
+
+  // The arena interior stays white — the margin outside the grid keeps
+  // the gray base fill from above.
+  if (!bacteriaView) {
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, gridW, gridH);
+  }
 
   // ── Water droplets — drawn first so atoms render ON TOP of water ────────
   const dropCount = droplets[0] | 0;
@@ -653,17 +662,23 @@ export function draw2DClassic(
   bonds: Uint32Array,
   droplets: Float32Array,
   camera: Camera,
+  gridW: number,
+  gridH: number,
 ): void {
   const { canvas } = ctx;
 
-  // Opaque white background covers whatever the main canvas had.
+  // Opaque background covers whatever the main canvas had — gray outside
+  // the arena bounds, white inside (same convention as draw2D).
   ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.fillStyle = '#ffffff';
+  ctx.fillStyle = rgbHex(MARGIN);
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   // World→screen camera transform, same convention as draw2D.
   const z = camera.zoom;
   ctx.setTransform(z, 0, 0, z, -camera.x * z, -camera.y * z);
+
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, gridW, gridH);
 
   // Faint water droplet hint — Evoloom-only feature, kept very subtle so
   // the classic look stays close to Hutton's. Set to 0 alpha if you want

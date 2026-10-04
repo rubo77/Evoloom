@@ -11,7 +11,7 @@
 
 import { RADIUS } from './cell';
 import { STRIDE, unpackType, unpackState } from './snapshot';
-import { ATOM_COLORS, FALLBACK_COLOR, MEMBRANE_LINE, PREDATOR_LINE, PREDATOR_UNIT, ALPHA } from './theme';
+import { ATOM_COLORS, FALLBACK_COLOR, MEMBRANE_LINE, PREDATOR_LINE, PREDATOR_UNIT, ALPHA, MARGIN } from './theme';
 
 // ── EMA smoothing (same constants as 2D renderer) ───────────────────────────
 const EMA_DEFAULT   = 0.28;
@@ -103,6 +103,7 @@ struct Uniforms {
   view: u32, _pad0: u32,
   camera: vec2f,
   zoom: f32, _pad1: f32,
+  grid: vec2f, _pad2: vec2f,
 };
 @group(0) @binding(0) var<uniform> u: Uniforms;
 fn worldToClip(p: vec2f) -> vec2f {
@@ -120,6 +121,12 @@ const SHADER_BG = PRELUDE + `
   return vec4f(p[vi], 0., 1.);
 }
 @fragment fn fs(@builtin(position) frag: vec4f) -> @location(0) vec4f {
+  // Outside the arena bounds the margin renders gray; the interior keeps
+  // the per-view backdrop.
+  let world = frag.xy / u.zoom + u.camera;
+  if (world.x < 0. || world.y < 0. || world.x > u.grid.x || world.y > u.grid.y) {
+    return vec4f(${MARGIN[0]}, ${MARGIN[1]}, ${MARGIN[2]}, 1.);
+  }
   if (u.view == 1u) {
     let cx = u.resolution * 0.5;
     let d  = distance(frag.xy, cx) / (max(u.resolution.x, u.resolution.y) * 0.6);
@@ -390,7 +397,7 @@ function buildPipelines(device: GPUDevice, format: GPUTextureFormat) {
 
 function buildBuffers(device: GPUDevice) {
   const uniformBuf = device.createBuffer({
-    size: 32, // resolution(8) + view+pad(8) + camera(8) + zoom+pad(8)
+    size: 48, // resolution(8) + view+pad(8) + camera(8) + zoom+pad(8) + grid+pad(16)
     usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
   });
   const particleBuf = device.createBuffer({
@@ -507,6 +514,8 @@ export function drawGPU(
   bacteriaView: boolean,
   epoch: number,
   camera: GPUCamera,
+  gridW: number,
+  gridH: number,
 ): void {
   if (!_device || !_ctx || !_pipelines || !_buffers) return;
   const device = _device;
@@ -518,8 +527,8 @@ export function drawGPU(
   const view = ctx.getCurrentTexture().createView();
   const cmd = device.createCommandEncoder();
 
-  // Uniforms: resolution + view + camera + zoom (32 bytes)
-  const u = new ArrayBuffer(32);
+  // Uniforms: resolution + view + camera + zoom + grid bounds (48 bytes)
+  const u = new ArrayBuffer(48);
   const uF = new Float32Array(u);
   const uU = new Uint32Array(u);
   uF[0] = _canvasW; uF[1] = _canvasH;
@@ -528,6 +537,7 @@ export function drawGPU(
   uF[4] = camera.x; uF[5] = camera.y;
   uF[6] = camera.zoom;
   // _pad1 at uF[7]
+  uF[8] = gridW; uF[9] = gridH;
   device.queue.writeBuffer(_buffers.uniformBuf, 0, u);
 
   // Build inLoop bit-vector early — the membrane-unit staging below needs

@@ -54,8 +54,8 @@ const overlayCtx = overlay.getContext('2d')!;
 // Initial: fit arena to viewport (we let user zoom in from there).
 const fitZoom = Math.min(VIEW_W / GRID_W, VIEW_H / GRID_H);
 const camera = {
-  x: (GRID_W - VIEW_W / fitZoom) / 2,
-  y: (GRID_H - VIEW_H / fitZoom) / 2,
+  x: Math.max(0, (GRID_W - VIEW_W / fitZoom) / 2),
+  y: Math.max(0, (GRID_H - VIEW_H / fitZoom) / 2),
   zoom: fitZoom,
 };
 // The arena always fills the viewport — zooming out past fit would
@@ -63,18 +63,14 @@ const camera = {
 const MIN_ZOOM = fitZoom;
 const MAX_ZOOM = 6;
 
-function centerCamera(): void {
-  camera.x = (GRID_W - VIEW_W / camera.zoom) / 2;
-  camera.y = (GRID_H - VIEW_H / camera.zoom) / 2;
-}
-
-// Keep the camera inside the arena: center on the axis where the arena is
-// smaller than the view, clamp on the axis where it is larger.
+// Keep the camera inside the arena: pin to the top-left on the axis
+// where the view is larger than the grid (margin collects on the right
+// or bottom edge), clamp on the axis where it is smaller.
 function clampCameraToArena(): void {
   const vw = canvas.width / camera.zoom;
   const vh = canvas.height / camera.zoom;
-  camera.x = vw >= GRID_W ? (GRID_W - vw) / 2 : Math.max(0, Math.min(GRID_W - vw, camera.x));
-  camera.y = vh >= GRID_H ? (GRID_H - vh) / 2 : Math.max(0, Math.min(GRID_H - vh, camera.y));
+  camera.x = vw >= GRID_W ? 0 : Math.max(0, Math.min(GRID_W - vw, camera.x));
+  camera.y = vh >= GRID_H ? 0 : Math.max(0, Math.min(GRID_H - vh, camera.y));
 }
 
 // ── Camera follow — tracks a captured set of atoms by ID ──────────────────
@@ -271,7 +267,7 @@ canvas.addEventListener('wheel', (e) => {
   const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, camera.zoom * factor));
   if (newZoom <= MIN_ZOOM) {
     camera.zoom = MIN_ZOOM;
-    centerCamera();
+    clampCameraToArena();
   } else {
     camera.x = worldX - c.x / newZoom;
     camera.y = worldY - c.y / newZoom;
@@ -350,7 +346,7 @@ canvas.addEventListener('touchmove', (e: TouchEvent) => {
       const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, pinchStartZoom * scale));
       if (newZoom <= MIN_ZOOM) {
         camera.zoom = MIN_ZOOM;
-        centerCamera();
+        clampCameraToArena();
       } else {
         const worldX = pinchStartMidX / pinchStartZoom + pinchStartCamX;
         const worldY = pinchStartMidY / pinchStartZoom + pinchStartCamY;
@@ -2811,7 +2807,7 @@ function loop(): void {
       // Classic mode renders entirely onto the overlay canvas (which always
       // has a 2D context, regardless of whether main is WebGPU or 2D). The
       // overlay's opaque white fill covers whatever the main canvas last had.
-      draw2DClassic(overlayCtx, snap.atoms, snap.atomCount, snap.bonds, snap.droplets, camera);
+      draw2DClassic(overlayCtx, snap.atoms, snap.atomCount, snap.bonds, snap.droplets, camera, GRID_W, GRID_H);
       // Arena boundary — drawn last on top of the white classic surface.
       // Uses a darker variant so it reads on white. Camera transform is
       // already set by draw2DClassic.
@@ -2819,7 +2815,7 @@ function loop(): void {
       overlayCtx.setTransform(z, 0, 0, z, -camera.x * z, -camera.y * z);
       drawArenaBorder(overlayCtx, GRID_W, GRID_H, z);
     } else if (useGPU) {
-      drawGPU(snap.atoms, snap.atomCount, snap.loops, snap.bonds, snap.droplets, bacteriaView, snap.epoch, camera);
+      drawGPU(snap.atoms, snap.atomCount, snap.loops, snap.bonds, snap.droplets, bacteriaView, snap.epoch, camera, GRID_W, GRID_H);
       // Reset the overlay transform before clearing — clearRect honors the
       // current transform, so leftover camera scale from classic-mode would
       // cause it to clear only a tiny world-space rect and leave the rest
@@ -2841,7 +2837,7 @@ function loop(): void {
         drawHUD2D(overlayCtx, snap.iterations, snap.atomCount, snap.atoms, shift);
       }
     } else if (ctx2d) {
-      draw2D(ctx2d, snap.atoms, snap.atomCount, snap.loops, snap.bonds, snap.droplets, bacteriaView, snap.epoch, camera);
+      draw2D(ctx2d, snap.atoms, snap.atomCount, snap.loops, snap.bonds, snap.droplets, bacteriaView, snap.epoch, camera, GRID_W, GRID_H);
       // Arena boundary on the 2D fallback canvas. Skipped in microscope.
       if (viewMode !== 'microscope') {
         const z = camera.zoom;

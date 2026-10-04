@@ -144,3 +144,18 @@ full width, right menu not showing fully, hide all shortcuts on
 mobile, hamburger without "Controls", hide fullscreen and tutorial
 buttons outside the menu, and a hide/show option for the top-left
 overlay with a small arrow button. Commit in between each.
+
+## 26-10-04 03:30
+Is the mobile-check.js script even useful? If it can go, delete it.
+On wide screens whose height is under 850px the page starts scrolling
+vertically — that must not happen; when shrinking the window height the
+canvas must get narrower so everything still fits. The canvas must also
+always be flush with the top-left screen edge, leaving a margin on the
+right/bottom instead, and that margin outside the canvas must be gray,
+not white.
+
+## 26-10-04 03:40
+Clarification: this is only about how the arena is centered when fully
+zoomed out — it must be aligned to the top-left, that is all that needs
+to change. And only the area outside the arena *within the canvas*
+should be gray instead of white.

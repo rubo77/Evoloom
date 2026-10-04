@@ -45,6 +45,10 @@ export const ALPHA = {
 /** Predator membrane units get this tint instead of the 'a' color. */
 export const PREDATOR_UNIT: [number, number, number] = [0.886, 0.463, 0.353];
 
+/** Color of the canvas area outside the arena bounds (visible on the
+ *  right/bottom edge when the zoomed-out view is larger than the grid). */
+export const MARGIN: [number, number, number] = [0.72, 0.72, 0.75];
+
 // ── helpers ─────────────────────────────────────────────────────────────────
 
 /** rgb floats → '#rrggbb' */

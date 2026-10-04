@@ -213,3 +213,18 @@ numbers get too large).
 ## 26-10-04 12:55
 The minimize button must be left-aligned inside the upper box, next
 to the text.
+
+## 26-10-04 13:10
+"Fast forward the simulation" does not work — it hangs at "Cancel
+0%", even with only 1000 steps it either takes forever or just does
+not show progress and stays at 0%. Fix it and also build in two
+decimal places in the percent display.
+
+
+## 26-10-04 14:05
+Pressing "reset simulation" during a burn must abort the burn.
+
+## 26-10-04 14:25
+Instead of "cancel" it should say "stop", since the state before the
+burn is not restored — it just stops at the point in the burn where
+you currently are.

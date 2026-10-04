@@ -265,6 +265,9 @@ function spawnRandomSoupPatches(): void {
 
 function setupGame(): void {
   selectedSet.clear();
+  // A world rebuild kills any running burn — the grid it was
+  // fast-forwarding is gone and it must not step the new world.
+  burning = false;
   grid = new Grid();
   attachNoiseToGrid();
   grid.create(gridW, gridH);
@@ -335,6 +338,9 @@ function setupGame(): void {
 
 function setupRigged(): void {
   selectedSet.clear();
+  // A world rebuild kills any running burn — the grid it was
+  // fast-forwarding is gone and it must not step the new world.
+  burning = false;
   grid = new Grid();
   attachNoiseToGrid();
   grid.create(gridW, gridH);
@@ -356,6 +362,9 @@ function setupRigged(): void {
 
 function setupWild(): void {
   selectedSet.clear();
+  // A world rebuild kills any running burn — the grid it was
+  // fast-forwarding is gone and it must not step the new world.
+  burning = false;
   grid = new Grid();
   attachNoiseToGrid();
   grid.create(gridW, gridH);
@@ -790,36 +799,44 @@ function yieldToQueue(): Promise<void> {
 }
 
 // Headless burn loop. Runs grid.step() as fast as the worker can manage,
-// emits progress every ~250ms, yields to the message queue between chunks
-// so abort/paint/etc. continue to work, and posts a final snapshot when
-// done so the main thread sees the new state.
+// emits progress every ~250ms of wall time, yields to the message queue
+// on the same budget so abort/paint/etc. stay responsive even when a
+// single chunk takes many seconds, and posts a final snapshot when done
+// so the main thread sees the new state.
 async function burnLoop(): Promise<void> {
   burning = true;
   let aborted = false;
   let lastProgressT  = performance.now();
   let lastProgressIt = grid.iterations;
-  // Chunk size = how many steps before we yield. Bigger = faster (less yield
-  // overhead) but slower abort response. 5000 ≈ 1-2 seconds of work at peak,
-  // which keeps abort latency tolerable.
+  // Chunk size = max steps before a mandatory yield. Bigger = faster
+  // (less yield overhead). Progress and queue drains additionally run
+  // on a 250ms wall-clock budget inside the chunk, so slow steps never
+  // leave the UI without feedback or the Cancel button unresponsive.
   const CHUNK = 5000;
 
   while (burning && grid.iterations < burnTarget) {
     const stopAt = Math.min(burnTarget, grid.iterations + CHUNK);
-    while (grid.iterations < stopAt) runOneStep();
-
-    const now = performance.now();
-    if (now - lastProgressT > 250) {
-      const dIt = grid.iterations - lastProgressIt;
-      const dT  = (now - lastProgressT) / 1000;
-      const progress: BurnProgressMsg = {
-        type: 'burnProgress',
-        iterations: grid.iterations,
-        target: burnTarget,
-        stepsPerSec: dT > 0 ? Math.round(dIt / dT) : 0,
-      };
-      self.postMessage(progress);
-      lastProgressT  = now;
-      lastProgressIt = grid.iterations;
+    // `burning` is also checked inside the chunk: a world rebuild (reset,
+    // reseed, mode change, save load, game start/end) drops it mid-step
+    // and the loop must not keep stepping the freshly built grid.
+    while (burning && grid.iterations < stopAt) {
+      runOneStep();
+      const now = performance.now();
+      if (now - lastProgressT > 250) {
+        const dIt = grid.iterations - lastProgressIt;
+        const dT  = (now - lastProgressT) / 1000;
+        const progress: BurnProgressMsg = {
+          type: 'burnProgress',
+          iterations: grid.iterations,
+          target: burnTarget,
+          stepsPerSec: dT > 0 ? Math.round(dIt / dT) : 0,
+        };
+        self.postMessage(progress);
+        lastProgressT  = now;
+        lastProgressIt = grid.iterations;
+        await yieldToQueue();
+        if (!burning) break;
+      }
     }
     // Yield so abortBurn / paintSoup / paintWater / clearWater can run.
     await yieldToQueue();
@@ -836,7 +853,7 @@ async function burnLoop(): Promise<void> {
     aborted,
   };
   self.postMessage(done);
-  tick();
+  scheduleTick();
 }
 
 // One physics step plus all per-step side-effects (mode-specific tick,
@@ -858,6 +875,15 @@ function runOneStep(): void {
   }
 }
 
+// The tick chain re-arms itself inside tick(); external starters (init,
+// burn finish) go through scheduleTick so a second chain can never be
+// armed — two parallel chains would double the simulation speed.
+let tickTimer: ReturnType<typeof setTimeout> | null = null;
+function scheduleTick(delay = 0): void {
+  if (tickTimer !== null) return;
+  tickTimer = setTimeout(() => { tickTimer = null; tick(); }, delay);
+}
+
 function tick(): void {
   if (burning) return; // burn loop owns the worker; tick will be re-armed when burn finishes
   const now = performance.now();
@@ -876,7 +902,7 @@ function tick(): void {
   if (delay === 0 && performance.now() - nextTickAt > TARGET_DT_MS * 4) {
     nextTickAt = performance.now();
   }
-  setTimeout(tick, delay);
+  tickTimer = setTimeout(() => { tickTimer = null; tick(); }, delay);
 }
 
 // ── Control message handler ───────────────────────────────────────────────
@@ -891,7 +917,7 @@ self.onmessage = (e: MessageEvent<unknown>) => {
       // before setup so the initial layout is deterministic for that seed.
       seedRNG(_seed);
       if (mode === 'rigged') setupRigged(); else setupWild();
-      tick();
+      scheduleTick();
       return;
     case 'setSeed':
       // Re-seed AND restart the rigged setup so the new seed actually drives
@@ -1011,15 +1037,19 @@ self.onmessage = (e: MessageEvent<unknown>) => {
       if (msg.waterInterval > 0) dripWaterInterval = msg.waterInterval;
       return;
     case 'burn':
-      // Ignore burn-while-burning; if user wants to extend, abort + restart.
+      // A burn arriving while one runs extends the target instead of
+      // being dropped — the loop still reaches burnDone, so the UI can
+      // never wait on a completion message that would never come (e.g.
+      // Start pressed again before the queue drained an abort).
+      burnTarget = Math.max(burning ? burnTarget : grid.iterations, msg.targetIters);
       if (burning) return;
-      burnTarget = Math.max(grid.iterations, msg.targetIters);
       // Kick off the async burn loop. It flips `burning = true` and tick()
       // self-suspends on its next firing (or it's already idle).
       void burnLoop();
       return;
     case 'abortBurn':
-      // Flips the loop guard; the loop notices on its next CHUNK boundary.
+      // Flips the loop guard; the loop notices at its next 250ms
+      // progress/yield point inside the current chunk.
       burning = false;
       return;
     case 'selectAt': {

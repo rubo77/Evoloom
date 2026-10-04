@@ -881,7 +881,7 @@ const burnDefaultLabel = 'Start';
 let burnWallStart = 0;
 
 function startBurn(): void {
-  if (burning) { send({ type: 'abortBurn' }); logStatus('Aborting burn…'); return; }
+  if (burning) { send({ type: 'abortBurn' }); logStatus('Stopping burn…'); return; }
   const requested = Math.max(1000, Math.floor(parseInt(burnIters.value) || 100000));
   const startIter = lastSnapshot?.iterations ?? 0;
   burnStartIter  = startIter;
@@ -889,7 +889,7 @@ function startBurn(): void {
   burnWallStart  = performance.now();
   burning = true;
   burnBtn.classList.add('recording');
-  burnBtn.textContent = '✕ Cancel (0%)';
+  burnBtn.textContent = '✕ Stop (0.00%)';
   send({ type: 'burn', targetIters: burnTargetIter });
   logStatus(`Burn started → +${requested.toLocaleString()} iters (target ${burnTargetIter.toLocaleString()})`);
 }
@@ -898,14 +898,15 @@ function onBurnProgress(p: BurnProgressMsg): void {
   if (!burning) return;
   const span = burnTargetIter - burnStartIter;
   const done = p.iterations - burnStartIter;
-  const pct  = span > 0 ? Math.min(100, Math.round((done / span) * 100)) : 100;
-  burnBtn.textContent = `✕ Cancel (${pct}%)`;
+  const pct  = span > 0 ? Math.min(100, (done / span) * 100) : 100;
+  const pctStr = pct.toFixed(2);
+  burnBtn.textContent = `✕ Stop (${pctStr}%)`;
   // Estimate ETA from current rate.
   const remaining = Math.max(0, burnTargetIter - p.iterations);
   const etaSec = p.stepsPerSec > 0 ? Math.round(remaining / p.stepsPerSec) : 0;
   showStatus(
     `Burning · iter ${p.iterations.toLocaleString()} / ${p.target.toLocaleString()} ` +
-    `(${pct}%) · ${p.stepsPerSec.toLocaleString()} steps/sec · ETA ${etaSec}s`
+    `(${pctStr}%) · ${p.stepsPerSec.toLocaleString()} steps/sec · ETA ${etaSec}s`
   );
 }
 
@@ -914,10 +915,12 @@ function onBurnDone(d: BurnDoneMsg): void {
   burnBtn.classList.remove('recording');
   burnBtn.textContent = burnDefaultLabel;
   const wallSec = (performance.now() - burnWallStart) / 1000;
-  const itersDone = d.iterations - burnStartIter;
+  // A world rebuild can abort a burn with the counter already back at
+  // 0 — the delta would report negative iters otherwise.
+  const itersDone = Math.max(0, d.iterations - burnStartIter);
   const rate = wallSec > 0 ? Math.round(itersDone / wallSec) : 0;
   if (d.aborted) {
-    logStatus(`Burn cancelled @ iter ${d.iterations.toLocaleString()} · processed ${itersDone.toLocaleString()} iters in ${wallSec.toFixed(1)}s (${rate.toLocaleString()} steps/sec)`);
+    logStatus(`Burn stopped @ iter ${d.iterations.toLocaleString()} · processed ${itersDone.toLocaleString()} iters in ${wallSec.toFixed(1)}s (${rate.toLocaleString()} steps/sec)`);
   } else {
     logStatus(`Burn complete @ iter ${d.iterations.toLocaleString()} · ${itersDone.toLocaleString()} iters in ${wallSec.toFixed(1)}s (${rate.toLocaleString()} steps/sec)`);
   }

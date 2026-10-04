@@ -8,3 +8,4 @@ www/
 dev/playwright/node_modules/
 dev/playwright/test-results/
 dev/savegames/
+dev/deploy.sh

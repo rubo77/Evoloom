@@ -114,6 +114,15 @@ let mode: Mode = 'rigged';
 let gridW = 0;
 let gridH = 0;
 let stepsPerFrame = 8;
+const MAX_SPF = 30;
+// Seed near the old fixed default; the EWMA replaces it within a few ticks.
+let avgStepMs = 2;
+// Fraction of the auto-tuned rate the sim actually runs — 1 = full
+// throttle. Anything below 1 works at any density: it both shrinks
+// the per-tick step count and, when a single step already fills the
+// frame, stretches steps across ticks (true slow motion).
+let simRate = 1;
+let stepCarry = 0;
 let paused = false;
 let inGame = false;
 // Drip-feed (sandbox-mode passive replenishment) — same machinery as the
@@ -888,7 +897,21 @@ function tick(): void {
   if (burning) return; // burn loop owns the worker; tick will be re-armed when burn finishes
   const now = performance.now();
   if (!paused && gridW > 0) {
-    for (let i = 0; i < stepsPerFrame; i++) runOneStep();
+    stepCarry += stepsPerFrame * simRate;
+    const n = Math.floor(stepCarry);
+    stepCarry -= n;
+    const t0 = performance.now();
+    for (let i = 0; i < n; i++) runOneStep();
+    if (n > 0) {
+      // Adapt the step count to the measured per-step cost so the step
+      // loop stays inside one frame budget: dense worlds drop to a
+      // single step per frame (steady frame rate instead of a
+      // slideshow), light worlds scale up to MAX_SPF (free
+      // fast-forward). Total throughput is physics-bound either way —
+      // only the render cadence changes.
+      avgStepMs = avgStepMs * 0.8 + ((performance.now() - t0) / n) * 0.2;
+      stepsPerFrame = Math.max(1, Math.min(MAX_SPF, Math.floor(TARGET_DT_MS / Math.max(0.05, avgStepMs))));
+    }
     postSnapshot();
   }
   // Schedule the next tick relative to the *target* cadence. If physics took
@@ -944,6 +967,9 @@ self.onmessage = (e: MessageEvent<unknown>) => {
       return;
     case 'setStepsPerFrame':
       stepsPerFrame = msg.n;
+      return;
+    case 'setSimRate':
+      simRate = Math.max(0, Math.min(1, msg.v));
       return;
     case 'setThermalScale':
       grid.thermalScale = msg.v;

@@ -33,8 +33,8 @@ export interface TutorialDeps {
   /** Camera-follow the centroid of the current selection. */
   setFollow(on: boolean): void;
   isFollowing(): boolean;
-  setSpeed(n: number): void;
-  getSpeed(): number;
+  setRate(f: number): void;
+  getRate(): number;
   setLysin(on: boolean): void;
   isGameMode(): boolean;
   toggleGame(): void;
@@ -239,7 +239,7 @@ const STEPS: Step[] = [
   },
   {
     title: 'Genome copying & division',
-    enter: (d) => { d.setPaused(false); d.setSpeed(24); },
+    enter: (d) => { d.setPaused(false); d.setRate(1); },
     exit: (d) => d.setFollow(false),
     html: `Resuming at high speed — watch the <b>free
       <code>d</code> polymerases</b> inside the membrane. When one touches
@@ -317,7 +317,7 @@ let active = false;
 let taskDone = false;
 let pollTimer: ReturnType<typeof setInterval> | null = null;
 let savedPaused = false;
-let savedSpeed = 8;
+let savedRate = 1;
 
 export function startTutorial(d: TutorialDeps): void {
   if (active) return;
@@ -325,7 +325,7 @@ export function startTutorial(d: TutorialDeps): void {
   active = true;
   index = 0;
   savedPaused = d.isPaused();
-  savedSpeed = d.getSpeed();
+  savedRate = d.getRate();
   buildDom();
   window.addEventListener('keydown', onKey, true);
   window.addEventListener('resize', positionSpotlight);
@@ -466,7 +466,7 @@ function closeTutorial(): void {
   overlay = spot = card = null;
   // Restore the world state the tutorial found. Play mode entered by the
   // player stays on — the tour ends inside the game by design.
-  deps!.setSpeed(savedSpeed);
+  deps!.setRate(savedRate);
   deps!.setPaused(savedPaused);
   if (deps!.isInspectorOpen()) deps!.closeInspector();
   deps!.setFollow(false);

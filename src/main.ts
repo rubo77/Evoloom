@@ -569,7 +569,6 @@ let lysinActive = false;
 let viewMode: ViewMode = 'educational';
 let bacteriaView = false; // mirror of viewMode === 'microscope', used by GPU/2D draw paths
 let useGPU = false;
-let stepsPerFrame = 8;
 let gameMode = false;
 
 // Brush settings — controllable via UI later if needed
@@ -1141,10 +1140,14 @@ const soupVal     = document.getElementById('soup-val')!;
 const dampSlider  = document.getElementById('damp-slider') as HTMLInputElement;
 const dampVal     = document.getElementById('damp-val')!;
 
+// Speed is a rate limit, not a step multiplier — 100% lets the worker's
+// auto-pacing run flat out, lower values stretch steps across ticks for
+// smooth slow motion without tearing the frame rate.
+let simRate = 1;
 speedSlider.addEventListener('input', () => {
-  stepsPerFrame = parseInt(speedSlider.value);
-  speedVal.textContent = speedSlider.value;
-  send({ type: 'setStepsPerFrame', n: stepsPerFrame });
+  simRate = parseInt(speedSlider.value) / 100;
+  speedVal.textContent = speedSlider.value + '%';
+  send({ type: 'setSimRate', v: simRate });
 });
 soupSlider.addEventListener('input', () => {
   const v = parseInt(soupSlider.value) / 100;
@@ -3054,11 +3057,13 @@ function launchTutorial(): void {
     focusOn: (x, y, r) => focusOn(x, y, r),
     setFollow: (on) => setFollow(on),
     isFollowing: () => followIds !== null,
-    setSpeed: (n) => {
-      speedSlider.value = String(n);
-      speedSlider.dispatchEvent(new Event('input'));
+    setRate: (f) => {
+      simRate = Math.max(0, Math.min(1, f));
+      speedSlider.value = String(Math.round(simRate * 100));
+      speedVal.textContent = speedSlider.value + '%';
+      send({ type: 'setSimRate', v: simRate });
     },
-    getSpeed: () => stepsPerFrame,
+    getRate: () => simRate,
     setLysin: (on) => { if (on !== lysinActive) toggleLysin(); },
     isGameMode: () => gameMode,
     toggleGame,
@@ -3143,8 +3148,6 @@ function loop(): void {
     // In-progress selection rectangle (drawn while the user is dragging).
     drawSelectionBox();
   }
-  // also keep stepsPerFrame in sync (so worker has it after init)
-  void stepsPerFrame;
   requestAnimationFrame(loop);
 }
 

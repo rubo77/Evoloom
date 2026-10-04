@@ -40,6 +40,7 @@ export type ControlMsg =
   | { type: 'init'; gridW: number; gridH: number; mode: 'rigged' | 'wild' }
   | { type: 'pause'; paused: boolean }
   | { type: 'setStepsPerFrame'; n: number }
+  | { type: 'setSimRate'; v: number }
   | { type: 'setThermalScale'; v: number }
   | { type: 'setBondedDamping'; v: number }
   | { type: 'toggleLysin'; on: boolean }

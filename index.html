@@ -1802,15 +1802,15 @@
     <div class="card card--physics">
       <div class="card__label">Physics</div>
       <div class="card__row sliders">
-        <label>speed
-          <input type="range" id="speed-slider" min="1" max="30" value="8">
-          <span class="val" id="speed-val">8</span>
+        <label data-help="Speed — simulation rate, 100% = as fast as the CPU allows">speed
+          <input type="range" id="speed-slider" min="5" max="100" value="100" step="5">
+          <span class="val" id="speed-val">100%</span>
         </label>
-        <label>soup
+        <label data-help="Soup — thermal energy of the free atom soup">soup
           <input type="range" id="soup-slider" min="0" max="100" value="60">
           <span class="val" id="soup-val">60%</span>
         </label>
-        <label>damp
+        <label data-help="Damp — velocity damping on bonded atoms (membrane wobble)">damp
           <input type="range" id="damp-slider" min="50" max="100" value="100">
           <span class="val" id="damp-val">1.00</span>
         </label>

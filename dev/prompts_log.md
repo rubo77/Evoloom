@@ -256,3 +256,16 @@ whole burn block can be hidden for now.
 ## 26-10-04 17:55
 Fix the error: when the address is already in use, stop the server
 with kill first.
+
+## 26-10-04 18:05
+The physics speed block should also show a help text at the bottom,
+and long-press too (DRY) — for speed, soup, damp.
+
+## 26-10-04 18:25
+Speed makes no sense at all, does it? Because then everything just
+stutters.
+
+## 26-10-04 18:55
+What would be useful is slowing everything down — that is what I
+imagine under "speed". What does the tutorial step do? Is that
+nonsense too?

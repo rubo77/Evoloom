@@ -286,3 +286,9 @@ physics. Plan first.
 Quicksave and quickload need different keyboard shortcuts that also
 work well on QWERTZ. Also link the online version on eclabs in the
 README.
+
+## 26-10-04 14:00
+Why is the pause button hidden once the game has started? And the WASD
+steering doesn't work — instead it should be: when no tool is selected,
+you can just press anywhere on the screen and the green bacterium moves
+toward where you press for as long as you hold.

@@ -306,7 +306,12 @@ function finishSelect(clientX: number, clientY: number): void {
 canvas.addEventListener('mousedown', (e) => {
   dragging = true; lastMx = e.clientX; lastMy = e.clientY;
   if (brushMode === 'pan') {
-    canvas.style.cursor = 'grabbing';
+    if (gameMode) {
+      // Press & hold steers the microbe toward the pointer.
+      steerTarget = screenToWorld(e.clientX, e.clientY);
+    } else {
+      canvas.style.cursor = 'grabbing';
+    }
   } else if (brushMode === 'select') {
     const w = screenToWorld(e.clientX, e.clientY);
     selectBoxStart = { x: w.x, y: w.y };
@@ -319,6 +324,11 @@ canvas.addEventListener('mousedown', (e) => {
 window.addEventListener('mousemove', (e) => {
   if (!dragging) return;
   if (brushMode === 'pan') {
+    if (gameMode) {
+      // Steering, not panning — the press point follows the pointer.
+      if (steerTarget) steerTarget = screenToWorld(e.clientX, e.clientY);
+      return;
+    }
     if (followIds !== null) setFollow(false); // user takes the camera back
     camSnap = null;
     const d = clientDeltaToWorld(e.clientX - lastMx, e.clientY - lastMy);
@@ -344,6 +354,7 @@ window.addEventListener('mousemove', (e) => {
 window.addEventListener('mouseup', (e) => {
   if (dragging && brushMode === 'select') finishSelect(e.clientX, e.clientY);
   dragging = false;
+  endSteer();
   canvas.style.cursor = brushMode === 'pan' ? 'grab' : 'crosshair';
 });
 canvas.style.cursor = 'grab';
@@ -412,6 +423,9 @@ canvas.addEventListener('touchstart', (e: TouchEvent) => {
       selectAnchorScreen = { x: t.clientX, y: t.clientY };
     } else if (brushMode !== 'pan') {
       applyBrushAt(t.clientX, t.clientY);
+    } else if (gameMode) {
+      // Press & hold steers the microbe toward the touch point.
+      steerTarget = screenToWorld(t.clientX, t.clientY);
     }
   } else if (e.touches.length === 2) {
     activeGesture = 'pinch';
@@ -470,12 +484,17 @@ canvas.addEventListener('touchmove', (e: TouchEvent) => {
   } else if (activeGesture === 'single' && e.touches.length === 1 && dragging) {
     const t = e.touches[0];
     if (brushMode === 'pan') {
-      if (followIds !== null) setFollow(false); // user takes the camera back
-      camSnap = null;
-      const d = clientDeltaToWorld(t.clientX - lastMx, t.clientY - lastMy);
-      camera.x -= d.dx;
-      camera.y -= d.dy;
-      lastMx = t.clientX; lastMy = t.clientY;
+      if (gameMode) {
+        // Steering, not panning — the press point follows the finger.
+        if (steerTarget) steerTarget = screenToWorld(t.clientX, t.clientY);
+      } else {
+        if (followIds !== null) setFollow(false); // user takes the camera back
+        camSnap = null;
+        const d = clientDeltaToWorld(t.clientX - lastMx, t.clientY - lastMy);
+        camera.x -= d.dx;
+        camera.y -= d.dy;
+        lastMx = t.clientX; lastMy = t.clientY;
+      }
     } else if (brushMode === 'select') {
       if (selectBoxStart) {
         const w = screenToWorld(t.clientX, t.clientY);
@@ -502,6 +521,7 @@ canvas.addEventListener('touchend', (e: TouchEvent) => {
     }
     activeGesture = 'none';
     dragging = false;
+    endSteer();
   } else if (e.touches.length === 1 && activeGesture === 'pinch') {
     // Lifted one finger of a pinch — transition into single-finger pan
     // without firing a brush stroke.
@@ -516,6 +536,7 @@ canvas.addEventListener('touchend', (e: TouchEvent) => {
 canvas.addEventListener('touchcancel', () => {
   activeGesture = 'none';
   dragging = false;
+  endSteer();
 }, { passive: true });
 
 // ── Worker ──────────────────────────────────────────────────────────────────
@@ -835,7 +856,7 @@ function clearWater(): void {
 
 // Buttons that are HIDDEN while in microbe-steering mode — controls that
 // don't fit a "you-vs-them" game (sandbox tools).
-const GAME_HIDDEN_BTN_IDS = ['pause-btn', 'soup-brush-btn', 'water-brush-btn', 'clear-water-btn', 'lysin-btn', 'drip-btn', 'burn-btn', 'burn-iters'];
+const GAME_HIDDEN_BTN_IDS = ['soup-brush-btn', 'water-brush-btn', 'clear-water-btn', 'lysin-btn', 'drip-btn', 'burn-btn', 'burn-iters'];
 
 // ── Drip feed (sandbox passive replenishment) ──────────────────────────────
 let dripOn = false;
@@ -1002,10 +1023,11 @@ function toggleGame(): void {
     setFollow(false);
   }
   keyState.w = keyState.a = keyState.s = keyState.d = false;
+  steerTarget = null;
   send({ type: 'setPlayerInput', x: 0, y: 0 });
   applyGameModeUI();
   logStatus(gameMode
-    ? 'Play mode ON — WASD biases your green microbe (Brownian, not propulsion)'
+    ? 'Play mode ON — press & hold on the canvas to steer your microbe (WASD works too)'
     : 'Play mode OFF — sandbox restored');
 }
 
@@ -1081,8 +1103,58 @@ function hideGameOverlay(): void {
 // ── WASD input → biased Brownian. We track which of W/A/S/D are down and
 // send a normalized direction vector to the worker whenever the set changes.
 const keyState = { w: false, a: false, s: false, d: false };
+
+// Press-to-steer (game mode, no tool selected): while the pointer is held
+// on the canvas, the microbe swims toward the pointer's world position.
+// The direction is recomputed every frame because the player keeps moving.
+let steerTarget: { x: number; y: number } | null = null;
+let steerLastX = 0, steerLastY = 0;
+// Dead zone around the target in world units — inside it the microbe is
+// close enough that steering stops, avoiding jitter on the spot.
+const STEER_ARRIVE_RADIUS = 15;
+
+function playerCenterWorld(): { x: number; y: number } | null {
+  const snap = lastSnapshot;
+  if (!snap) return null;
+  let sx = 0, sy = 0, n = 0;
+  for (let i = 0; i < snap.atomCount; i++) {
+    // Atom flags bit3 = playerControlled (see packSnapshot in the worker).
+    if (((snap.atoms[i * STRIDE + 3] | 0) & 8) !== 0) {
+      sx += snap.atoms[i * STRIDE];
+      sy += snap.atoms[i * STRIDE + 1];
+      n++;
+    }
+  }
+  return n > 0 ? { x: sx / n, y: sy / n } : null;
+}
+
+function pushSteerInput(): void {
+  if (!gameMode || !steerTarget) return;
+  let dx = 0, dy = 0;
+  const c = playerCenterWorld();
+  if (c) {
+    dx = steerTarget.x - c.x;
+    dy = steerTarget.y - c.y;
+    const len = Math.sqrt(dx * dx + dy * dy);
+    if (len > STEER_ARRIVE_RADIUS) { dx /= len; dy /= len; }
+    else { dx = 0; dy = 0; }
+  }
+  if (dx !== steerLastX || dy !== steerLastY) {
+    steerLastX = dx; steerLastY = dy;
+    send({ type: 'setPlayerInput', x: dx, y: dy });
+  }
+}
+
+function endSteer(): void {
+  if (!steerTarget) return;
+  steerTarget = null;
+  steerLastX = steerLastY = 0;
+  pushPlayerInput(); // restores the WASD state (usually 0,0)
+}
+
 function pushPlayerInput(): void {
   if (!gameMode) return;
+  if (steerTarget) { pushSteerInput(); return; }
   let dx = 0, dy = 0;
   if (keyState.d) dx += 1;
   if (keyState.a) dx -= 1;
@@ -3098,6 +3170,7 @@ function loop(): void {
       }
     }
     if (followIds) followTick(snap);
+    if (gameMode && steerTarget) pushSteerInput();
     if (gameMode) {
       if (snap.gameStatus === 1 || snap.gameStatus === 2) showGameOverlay(snap.gameStatus);
       else hideGameOverlay();

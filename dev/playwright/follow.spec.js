@@ -40,6 +40,14 @@ test('follow mode tracks selection and yields to manual pan', async ({ page }) =
   await page.click('#select-btn');
   await expect(page.locator('#follow-btn')).toContainText('ON');
 
+  // Zooming keeps the track — the camera stays locked on the atoms.
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.wheel(0, -200);
+  await page.waitForTimeout(200);
+  await page.mouse.wheel(0, 200);
+  await page.waitForTimeout(200);
+  await expect(page.locator('#follow-btn')).toContainText('ON');
+
   // Manual pan takes the camera back → Follow releases.
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();

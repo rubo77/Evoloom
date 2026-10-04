@@ -234,8 +234,8 @@ const STEPS: Step[] = [
       drop arrived already selected.<br><br>
       <span class="tutorial-task">TASK: press <b>🎥 Follow</b> (right next
       to 🎯 Select). The camera will keep your cell centered wherever it
-      drifts. Any pan or zoom hands the camera back to you, and the
-      button greys out while nothing is selected.</span>`,
+      drifts — zooming stays locked on, any pan hands the camera back to
+      you, and the button greys out while nothing is selected.</span>`,
   },
   {
     title: 'Genome copying & division',

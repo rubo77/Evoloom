@@ -175,3 +175,6 @@ The snap at the end when fully zoomed out should ease over 0.5s.
 ## 26-10-04 05:50
 In camera follow mode the camera shouldn't jitter — it should only
 update the position every 0.5s with a 0.5s ease.
+
+## 26-10-04 08:40
+Zooming in and out always turns follow off — that must not happen.

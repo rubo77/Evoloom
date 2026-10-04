@@ -341,10 +341,18 @@ canvas.style.cursor = 'grab';
 // Mouse wheel → zoom around cursor
 canvas.addEventListener('wheel', (e) => {
   e.preventDefault();
-  if (followIds !== null) setFollow(false); // user takes the camera back
   const c = clientToCanvas(e.clientX, e.clientY);
-  const worldX = c.x / camera.zoom + camera.x;
-  const worldY = c.y / camera.zoom + camera.y;
+  // Follow mode survives zooming: the tracked atoms stay centered, so
+  // the zoom pivots on the view center instead of the cursor.
+  const following = followIds !== null;
+  const worldX = following
+    ? camera.x + canvas.width / camera.zoom / 2
+    : c.x / camera.zoom + camera.x;
+  const worldY = following
+    ? camera.y + canvas.height / camera.zoom / 2
+    : c.y / camera.zoom + camera.y;
+  const ax = following ? canvas.width / 2 : c.x;
+  const ay = following ? canvas.height / 2 : c.y;
   // Proportional zoom: scale with the wheel delta so one mouse notch
   // (~100 px) is a gentle ~5 % step and high-resolution trackpad deltas
   // glide instead of jumping. deltaMode 1 (lines) is normalized to px.
@@ -355,8 +363,8 @@ canvas.addEventListener('wheel', (e) => {
     snapCameraToFit();
   } else {
     camSnap = null;
-    camera.x = worldX - c.x / newZoom;
-    camera.y = worldY - c.y / newZoom;
+    camera.x = worldX - ax / newZoom;
+    camera.y = worldY - ay / newZoom;
     camera.zoom = newZoom;
   }
 }, { passive: false });
@@ -427,17 +435,25 @@ canvas.addEventListener('touchmove', (e: TouchEvent) => {
       (e.touches[0].clientY + e.touches[1].clientY) / 2,
     );
     if (pinchStartDist > 0 && newDist > 0) {
-      if (followIds !== null) setFollow(false); // user takes the camera back
       const scale = newDist / pinchStartDist;
       const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, pinchStartZoom * scale));
       if (newZoom <= MIN_ZOOM) {
         snapCameraToFit();
       } else {
         camSnap = null;
-        const worldX = pinchStartMidX / pinchStartZoom + pinchStartCamX;
-        const worldY = pinchStartMidY / pinchStartZoom + pinchStartCamY;
-        camera.x = worldX - newMidCanvas.x / newZoom;
-        camera.y = worldY - newMidCanvas.y / newZoom;
+        // Follow mode survives pinch zoom — pivot on the view center
+        // (tracked atoms) instead of the finger midpoint.
+        const following = followIds !== null;
+        const worldX = following
+          ? pinchStartCamX + canvas.width / pinchStartZoom / 2
+          : pinchStartMidX / pinchStartZoom + pinchStartCamX;
+        const worldY = following
+          ? pinchStartCamY + canvas.height / pinchStartZoom / 2
+          : pinchStartMidY / pinchStartZoom + pinchStartCamY;
+        const ax = following ? canvas.width / 2 : newMidCanvas.x;
+        const ay = following ? canvas.height / 2 : newMidCanvas.y;
+        camera.x = worldX - ax / newZoom;
+        camera.y = worldY - ay / newZoom;
         camera.zoom = newZoom;
       }
     }

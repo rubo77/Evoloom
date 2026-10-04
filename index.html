@@ -1781,9 +1781,13 @@
           </label>
         </span>
       </div>
-      <div class="card__row">
+      <!-- Burn is hidden: at saturated atom counts the physics step
+           dominates so completely that skipping the per-tick snapshot
+           only gains a few percent — not worth a panel row. The burn
+           mechanism stays in the code; drop this class to re-enable. -->
+      <div class="card__row" style="display:none">
         <span class="ctl-label">⏩ Burn</span>
-        <input id="burn-iters" type="number" value="100000" min="1000" step="10000">
+        <input id="burn-iters" type="number" value="1000" min="0" step="100">
         <span class="ctl-label">iters</span>
         <button id="burn-btn" data-help="Fast-forward the simulation without rendering">Start</button>
       </div>

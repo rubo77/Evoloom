@@ -880,9 +880,42 @@ let burnTargetIter = 0;
 const burnDefaultLabel = 'Start';
 let burnWallStart = 0;
 
+// The spinner steps adapt to the current order of magnitude — one tenth
+// of it (1000 → ±100, 10000 → ±1000, 500 → ±10). The browser applies
+// whatever `step` is set at click time, so it is recomputed on input.
+const BURN_ITERS_MIN = 100;
+function burnStepFor(v: number): number {
+  const order = Math.floor(Math.log10(Math.max(BURN_ITERS_MIN, v)));
+  return Math.max(1, Math.pow(10, order - 1));
+}
+function syncBurnStep(): void {
+  burnIters.step = String(burnStepFor(parseInt(burnIters.value) || 0));
+}
+burnIters.addEventListener('input', syncBurnStep);
+// The browser reads `step` before dispatching `input` — a value changed
+// without an input event (or whose last input fired at a smaller
+// magnitude) would step with a stale step. Arrow keys and spinner
+// clicks sync on the earlier keydown/pointerdown instead.
+burnIters.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowUp' || e.key === 'ArrowDown') syncBurnStep();
+});
+burnIters.addEventListener('pointerdown', syncBurnStep);
+burnIters.addEventListener('change', () => {
+  // Snap typed values onto the current step grid — an off-grid value
+  // would trigger the browser's step-mismatch warning on the next
+  // spinner press.
+  const v = Math.floor(parseInt(burnIters.value) || 0);
+  if (v > 0) {
+    const step = burnStepFor(v);
+    burnIters.value = String(Math.max(BURN_ITERS_MIN, Math.round(v / step) * step));
+  }
+  syncBurnStep();
+});
+syncBurnStep();
+
 function startBurn(): void {
   if (burning) { send({ type: 'abortBurn' }); logStatus('Stopping burn…'); return; }
-  const requested = Math.max(1000, Math.floor(parseInt(burnIters.value) || 100000));
+  const requested = Math.max(BURN_ITERS_MIN, Math.floor(parseInt(burnIters.value) || 1000));
   const startIter = lastSnapshot?.iterations ?? 0;
   burnStartIter  = startIter;
   burnTargetIter = startIter + requested;

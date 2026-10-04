@@ -228,3 +228,27 @@ Pressing "reset simulation" during a burn must abort the burn.
 Instead of "cancel" it should say "stop", since the state before the
 burn is not restored — it just stops at the point in the burn where
 you currently are.
+
+## 26-10-04 14:45
+The burn default should be 1000 when the app starts.
+
+## 26-10-04 15:30
+Apparently the burn is not faster at all than letting the simulation
+run visibly. Optimize that if possible; analyze what could be left out
+during burn that normally always runs.
+
+## 26-10-04 16:40
+A fixed step of 100 or 1000 is not sensible for the burn-iters input;
+the spinner should instead add/subtract a tenth of the current order
+of magnitude. The default step warning is also wrong ("please select
+a valid value...").
+
+## 26-10-04 17:10
+The snap is still not right: pressing up goes from 31000 to 31100 and
+only on the next click it snaps to 32000.
+
+## 26-10-04 17:40
+Is the burn mode actually faster than the visible simulation now? It
+does not seem so — is it even possible to simulate faster without
+visibility, or is the display marginal in comparison? In that case the
+whole burn block can be hidden for now.

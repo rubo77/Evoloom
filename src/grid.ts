@@ -11,6 +11,10 @@ const SLOT_SIZE = RADIUS * 5.0;
 
 // Maximum extent for octagon fast-reject (avoids sqrt)
 const XY_DIST = 2.0 * Math.sqrt(Math.max(PHYS_RANGE2, REACTION_RANGE2));
+// Crowding radius — an atom counts as crowded when more than one other
+// non-water atom sits within RADIUS*1.5 of it.
+const CROWD_R2        = (RADIUS * 1.5) * (RADIUS * 1.5);
+const CROWD_MANHATTAN = 2.0 * Math.sqrt(CROWD_R2);
 
 function computeRepulsion(r2: number): number {
   if (r2 > 0 && r2 < PHYS_RANGE2) {
@@ -183,57 +187,67 @@ export class Grid {
     return result;
   }
 
-  // Hot-path count-only variant — avoids allocating a result array. Returns
-  // exactly the same count getAllWithinRadius would produce. The inner-loop
-  // crowding check only needs the count, never the cells themselves.
-  // Water atoms ('w') are excluded — they are chemical substrate, not
-  // chemistry participants, so they shouldn't inflate crowding scores
-  // and suppress real chemistry. This is correctness, not just perf.
-  private countWithinRadius(x: number, y: number, r: number, capAt: number): number {
-    const r2 = r * r;
-    const [cx, cy] = this.slotOf(x, y);
-    const sr = Math.ceil(r / SLOT_SIZE);
-    let n = 0;
-    for (let i = Math.max(0, cx - sr); i <= Math.min(this.slotsX - 1, cx + sr); i++) {
-      for (let j = Math.max(0, cy - sr); j <= Math.min(this.slotsY - 1, cy + sr); j++) {
-        const slot = this.slots[i][j];
-        for (let k = 0; k < slot.length; k++) {
-          const c = slot[k];
-          if (c.type === 'w') continue;
-          const dx = c.loc.x - x;
-          const dy = c.loc.y - y;
-          if (dx * dx + dy * dy < r2) {
-            n++;
-            if (n > capAt) return n;
-          }
-        }
+  // Gather every cell in the 3x3 slot window around (cx, cy) into _nearby.
+  // SLOT_SIZE (5*RADIUS) >= REACTION_RANGE (2.5*RADIUS), so the window is
+  // provably sufficient: atoms in a slot 2 away are at min distance
+  // (k-1)*SLOT_SIZE = SLOT_SIZE > REACTION_RANGE apart.
+  private gatherNearby(cx: number, cy: number): void {
+    const searchSlots = Math.ceil(REACTION_RANGE / SLOT_SIZE);
+    const nearby = this._nearby;
+    nearby.length = 0;
+    for (let i = Math.max(0, cx - searchSlots); i <= Math.min(this.slotsX - 1, cx + searchSlots); i++) {
+      for (let j = Math.max(0, cy - searchSlots); j <= Math.min(this.slotsY - 1, cy + searchSlots); j++) {
+        for (const c of this.slots[i][j]) nearby.push(c);
       }
     }
-    return n;
   }
 
   private computeVelocitiesAndReact(): void {
-    // SLOT_SIZE (5*RADIUS) >= REACTION_RANGE (2.5*RADIUS), so a 3x3 slot
-    // window is provably sufficient: atoms in a slot 2 away are at min
-    // distance (k-1)*SLOT_SIZE = SLOT_SIZE > REACTION_RANGE apart. The
-    // previous +1 safety pad cost ~2.8x extra inner-loop work for nothing.
-    const searchSlots = Math.ceil(REACTION_RANGE / SLOT_SIZE);
     const nearby     = this._nearby;
     const candidates = this._candidates;
 
-    // Precompute crowding count per cell once per tick. The inner pair loop
-    // below would otherwise call countWithinRadius for every reaction
-    // candidate, which is a nested spatial query inside an already-spatial
-    // query — O(pairs_per_atom) wasted work per atom in dense regions.
-    // Caching gives bit-identical results because positions are read-only
-    // for the duration of computeVelocitiesAndReact (moveCells runs after).
+    // Crowding counts are only read by the reaction-candidate check in
+    // pass 2, which only runs for bonded atoms — when no bonds exist at
+    // all (pure soup), nothing reads them and the whole spatial pass can
+    // be skipped. The same O(N) scan that detects bonds also resets the
+    // counts, so a bond formed mid-pass later reads 0 ("not crowded"),
+    // matching the constructor default every atom starts with.
+    let anyBonded = false;
     const allCells = this.cells;
     for (let i = 0; i < allCells.length; i++) {
       const c = allCells[i];
-      // Water atoms don't react via chemistry (only via hydrolysis sweep),
-      // so they don't need a crowding count. Skip the spatial query.
-      if (c.type === 'w') { c.crowdingCount = 0; continue; }
-      c.crowdingCount = this.countWithinRadius(c.loc.x, c.loc.y, RADIUS * 1.5, 2);
+      c.crowdingCount = 0;
+      if (!anyBonded && c.bonds.size > 0) anyBonded = true;
+    }
+
+    // Pass 1 — crowding count per cell, read by the reaction-candidate
+    // check in pass 2. It must complete before any slot reacts, so it
+    // cannot be fused into the pass-2 loop. It shares pass 2's per-slot
+    // gather instead of running a full spatial query per atom — positions
+    // are read-only until moveCells, so the counts are exact.
+    // Water atoms don't react via chemistry (only via hydrolysis sweep),
+    // so they neither need a crowding count nor count toward others'.
+    if (anyBonded) {
+      for (let cx = 0; cx < this.slotsX; cx++) {
+        for (let cy = 0; cy < this.slotsY; cy++) {
+          const centralCells = this.slots[cx][cy];
+          if (centralCells.length === 0) continue;
+          this.gatherNearby(cx, cy);
+          for (let ci = 0; ci < centralCells.length; ci++) {
+            const cell = centralCells[ci];
+            if (cell.type === 'w') continue;
+            let crowd = 0;
+            for (const other of nearby) {
+              if (other === cell || other.type === 'w') continue;
+              const dx = cell.loc.x - other.loc.x;
+              const dy = cell.loc.y - other.loc.y;
+              if (Math.abs(dx) + Math.abs(dy) > CROWD_MANHATTAN) continue;
+              if (dx * dx + dy * dy < CROWD_R2 && ++crowd > 1) break;
+            }
+            cell.crowdingCount = crowd;
+          }
+        }
+      }
     }
 
     for (let cx = 0; cx < this.slotsX; cx++) {
@@ -241,13 +255,9 @@ export class Grid {
         const centralCells = this.slots[cx][cy];
         if (centralCells.length === 0) continue;
 
-        // Reuse pre-allocated buffer — no allocation per slot
-        nearby.length = 0;
-        for (let i = Math.max(0, cx - searchSlots); i <= Math.min(this.slotsX - 1, cx + searchSlots); i++) {
-          for (let j = Math.max(0, cy - searchSlots); j <= Math.min(this.slotsY - 1, cy + searchSlots); j++) {
-            for (const c of this.slots[i][j]) nearby.push(c);
-          }
-        }
+        // The neighborhood gather is lazy: it runs on the first bonded
+        // cell in the slot — a slot of free soup never triggers it.
+        let gathered = false;
 
         // Snapshot length only — iterating by index is allocation-free and
         // safe even if reactions push to or rearrange the slot mid-loop, since
@@ -268,6 +278,7 @@ export class Grid {
 
           // Only bonded cells participate in forces and trigger reactions
           if (cell.bonds.size > 0) {
+            if (!gathered) { this.gatherNearby(cx, cy); gathered = true; }
             for (const other of nearby) {
               if (other === cell) continue;
 

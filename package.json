@@ -1,7 +1,7 @@
 {
   "name": "evoloom",
-  "version": "2.0.0",
-  "description": "Evoloom — Squirm3-based artificial life with microbe-steering game mode, surface-tension water physics, and WebGPU rendering.",
+  "version": "3.0",
+  "description": "Evoloom \u2014 Squirm3-based artificial life with microbe-steering game mode, surface-tension water physics, and WebGPU rendering.",
   "author": "David Castro",
   "license": "GPL-3.0-or-later",
   "homepage": "https://github.com/timhutton/squirm3",
@@ -9,9 +9,9 @@
     "Tim Hutton (original Squirm3, 2007)"
   ],
   "scripts": {
-    "build": "esbuild src/main.ts --bundle --outfile=dist/bundle.js && esbuild src/physics-worker.ts --bundle --outfile=dist/worker.js",
-    "dev": "esbuild src/main.ts --bundle --outfile=dist/bundle.js --watch & esbuild src/physics-worker.ts --bundle --outfile=dist/worker.js --watch",
-    "build:app": "npm run build && rm -rf www && mkdir -p www/dist && cp index.html LICENSE www/ && cp dist/bundle.js dist/worker.js www/dist/",
+    "build": "esbuild src/main.ts --bundle --define:APP_VERSION=\\\"$npm_package_version\\\" --outfile=dist/bundle.js && esbuild src/physics-worker.ts --bundle --outfile=dist/worker.js",
+    "dev": "esbuild src/main.ts --bundle --define:APP_VERSION=\\\"$npm_package_version\\\" --outfile=dist/bundle.js --watch & esbuild src/physics-worker.ts --bundle --outfile=dist/worker.js --watch",
+    "build:app": "npm run build && rm -rf www && mkdir -p www/dist && cp index.html LICENSE impress.html privacy.html www/ && cp dist/bundle.js dist/worker.js www/dist/",
     "sync:app": "npm run build:app && cap sync",
     "test": "node scripts/test-app.mjs"
   },

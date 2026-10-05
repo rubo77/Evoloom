@@ -316,3 +316,32 @@ where I solved it correctly.
 ## 26-10-05 10:35
 Later (re: cherry-picking to the MR branch) — first keep working on the
 main branch, there is still a lot to fix.
+
+## 26-10-05 10:50
+[Screenshot: cell with differently sized atoms] On the phone in Chrome
+the atoms are all different sizes; in Firefox everything is correct,
+and in Chrome on desktop too.
+
+## 26-10-05 11:00
+Remember: after changes that mainly affect Android, always run
+./mobile-build.sh right away. — Also: what is Evoloom's version anyway?
+
+## 26-10-05 11:20
+Add a credits screen like Lalumo, with a very small link at the bottom
+of the page to privacy and impress, like Lalumo. Set the version to 3.0
+without a third zero. Also copy add_changelog from Lalumo — and adapt it.
+
+## 26-10-05 11:40
+The credits modal must go into the menu div at the bottom right so it
+doesn't steal height from the game.
+
+## 26-10-05 11:55
+There is still empty space below the info message at the bottom — that
+must go; the info message should just be a narrow bar at the bottom.
+
+## 26-10-05 12:05
+The headings can all always sit above their block, and "Version Evoloom
+3.0" / "App development eclabs" can go into one column.
+
+## 26-10-05 12:15
+The contact address must be evoloom-support@it.z11.de.

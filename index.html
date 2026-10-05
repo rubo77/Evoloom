@@ -86,7 +86,7 @@
       align-items: center;
       justify-content: flex-start;
       gap: var(--gap-default);
-      padding: 18px 16px 32px;
+      padding: 18px 16px 0;
       /* Subtle radial spotlight behind the canvas — very faint, gives the
          page a sense of depth without distracting from the sim. */
       background:
@@ -348,18 +348,19 @@
     /* ── Status line ──────────────────────────────────────────────────────
        A telegraphic line that pulses on every action. Mono font for the
        teletype feel; subtle leading dot indicates the sim is alive. */
+    /* Slim full-width status bar flush with the bottom edge of the
+       page — no chrome of its own, just a top rule. */
     #status {
+      align-self: stretch;
       font-family: var(--font-mono);
       font-size: 0.74rem;
       color: var(--text-muted);
       letter-spacing: 0.02em;
       min-height: 1.4em;
-      padding: 6px 14px;
-      border-radius: var(--r-md);
+      padding: 4px 14px;
       background: var(--surface-1);
-      border: 1px solid var(--border-subtle);
+      border-top: 1px solid var(--border-subtle);
       transition: color 0.2s var(--ease), background 0.2s var(--ease), border-color 0.2s var(--ease);
-      max-width: 90%;
       text-align: center;
     }
     #status::before {
@@ -376,6 +377,62 @@
       background: var(--surface-2);
       border-color: var(--border-emph);
     }
+
+    /* Tiny legal line at the bottom of the control panel — entry
+       points to the credits modal and the static legal pages. */
+    .panel-legal {
+      font-size: 0.66rem;
+      color: var(--text-muted);
+      text-align: center;
+      margin: 14px 0 4px;
+      letter-spacing: 0.03em;
+    }
+    .panel-legal a,
+    .panel-legal button.linklike {
+      color: var(--text-muted);
+      text-decoration: none;
+      background: none;
+      border: none;
+      padding: 0;
+      font: inherit;
+      cursor: pointer;
+    }
+    .panel-legal a:hover,
+    .panel-legal button.linklike:hover {
+      color: var(--c-primary);
+      text-decoration: underline;
+    }
+
+    /* Credits modal body — the shared .inspector-card chrome supplies
+       frame + header; the body is a plain scrollable text column. */
+    .credits-body {
+      display: block;
+      padding: 16px 20px;
+      overflow: auto;
+    }
+    .credits-body h3 {
+      color: var(--c-primary);
+      font-size: 0.78rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin: 14px 0 4px;
+    }
+    .credits-body h3:first-child { margin-top: 0; }
+    .credits-cols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px 20px;
+      margin-top: 14px;
+    }
+    .credits-cols:first-child { margin-top: 0; }
+    .credits-cols h3 { margin-top: 0; }
+    .credits-body p, .credits-body ul {
+      font-size: 0.85rem;
+      color: var(--text-default);
+      margin: 0;
+    }
+    .credits-body ul { padding-left: 20px; }
+    .credits-body a { color: var(--c-primary); }
 
     /* ── Control bar — card grid ──────────────────────────────────────────
        Each functional area becomes a labeled card in a responsive grid.
@@ -1257,7 +1314,7 @@
        view a portrait or landscape window into the same arena. */
     @media (max-width: 900px), (pointer: coarse) {
       body {
-        padding: 8px 6px 24px;
+        padding: 8px 6px 0;
         gap: var(--gap-snug);
         justify-content: flex-start;
       }
@@ -1726,6 +1783,57 @@
       </div>
     </div>
 
+    <!-- CREDITS MODAL — version, authorship, technologies and the legal
+         entry points. Reuses the .inspector modal chrome. -->
+    <div id="credits-modal" class="inspector" aria-hidden="true">
+      <div class="inspector-backdrop"></div>
+      <div class="inspector-card">
+        <div class="inspector-header">
+          <span class="inspector-title">🏆 Credits</span>
+          <button id="credits-close" class="panel-close" aria-label="Close credits" title="Close (Esc)">✕</button>
+        </div>
+        <div class="inspector-body credits-body">
+          <div class="credits-cols">
+            <div>
+              <h3>Version</h3>
+              <p id="credits-version">Evoloom</p>
+            </div>
+            <div>
+              <h3>App development</h3>
+              <p><a href="https://eclabs.de" target="_blank" rel="noopener">Eastcoast Laboratories</a></p>
+            </div>
+          </div>
+          <h3>Based on</h3>
+          <p>
+            <a href="https://github.com/DavidOrtsac/primordium" target="_blank" rel="noopener">Primordium</a>
+            by David Castro ·
+            <a href="https://github.com/timhutton/squirm3" target="_blank" rel="noopener">Squirm3</a>
+            by Tim Hutton (2007)
+          </p>
+          <h3>Technologies</h3>
+          <ul>
+            <li>TypeScript + esbuild</li>
+            <li>WebGPU &amp; Canvas 2D rendering</li>
+            <li>Physics in a Web Worker</li>
+            <li>Capacitor (Android / iOS)</li>
+          </ul>
+          <div class="credits-cols">
+            <div>
+              <h3>License</h3>
+              <p><a href="LICENSE" target="_blank" rel="noopener">GPL v3</a></p>
+            </div>
+            <div>
+              <h3>Legal</h3>
+              <p>
+                <a href="impress.html" target="_blank" rel="noopener">Imprint / Impressum</a><br>
+                <a href="privacy.html" target="_blank" rel="noopener">Privacy / Datenschutz</a>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- THE control panel. Lives INSIDE the canvas frame so it overlays
          only the simulation window, not the entire viewport. Slides in
          from the right edge of the canvas. -->
@@ -1932,6 +2040,15 @@
          hidden via the .hint-row CSS class. The Shortcuts card above
          replaces it inside the panel. -->
     <div class="hint-row" hidden></div>
+
+    <!-- Tiny legal line at the bottom of the panel — entry points to
+         the credits modal and the static legal pages. Lives inside the
+         menu so it costs the sim no vertical space. -->
+    <div class="panel-legal">
+      <button id="credits-open" class="linklike">Credits</button> ·
+      <a href="privacy.html" target="_blank" rel="noopener">Privacy</a> ·
+      <a href="impress.html" target="_blank" rel="noopener">Imprint</a>
+    </div>
       </div>
     </div>
     </aside>

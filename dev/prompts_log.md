@@ -306,3 +306,13 @@ indicator instead of the atom count — or does showing both make
 sense? Also: is the plan in dev/evoloom-game-logic-and-hud-plan.md
 correct, and which parts are already implemented? Add (DONE) markers
 to what is done.
+
+## 26-10-05 10:20
+On the phone you cannot close the menu again because the phone's
+status bar covers the X. Add a true fullscreen in the manifest —
+model it on the fullscreen setting in Lalumo in /var/www/Musici,
+where I solved it correctly.
+
+## 26-10-05 10:35
+Later (re: cherry-picking to the MR branch) — first keep working on the
+main branch, there is still a lot to fix.

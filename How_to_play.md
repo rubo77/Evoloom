@@ -43,8 +43,10 @@ atom dictionary).
 
 ## Getting started
 
-1. Serve the project over HTTP (workers need an origin): `bash run.sh`
-   or `python3 -m http.server 9131`, then open `http://localhost:9131/`.
+1. Build and serve the project over HTTP (workers need an origin):
+   `bash run.sh` builds and serves for you; for the manual variant run
+   `npm run build` once, then `python3 -m http.server 9131` and open
+   `http://localhost:9131/`.
 2. The sim starts with a seeded soup. Watch protocells emerge on their
    own — or open the **Controls** panel (`M` / ☰ button) to intervene.
 3. First time? Click the **?** button (top right) or **🎓 Tutorial** in
@@ -96,11 +98,11 @@ the fastest way to understand what Evoloom's soup is doing.
 ### World · Replenishment
 - **Drip** — periodic replenishment; sliders set intervals in ticks
   (soup 100–3000, default 700 · water 500–15000, default 4250)
-- **Burn** — fast-forward the sim N iterations (default 100,000)
 - **Seed** — reseed the PRNG and restart
 
 ### Physics
-- **speed** — sim speed (1–30, default 8)
+- **speed** — simulation rate (5–100%, default 100%); lower values
+  stretch steps into smooth slow motion
 - **soup** — soup density (0–100%, default 60)
 - **damp** — bonded-atom damping (0.50–1.00)
 
@@ -124,7 +126,10 @@ the fastest way to understand what Evoloom's soup is doing.
 
 `G` toggles the game mode: you control a green microbe.
 
-- **WASD** biases your cell's Brownian motion — a nudge, not propulsion
+- **Press & hold on the canvas** steers the microbe toward the pointer
+  — works with mouse or touch
+- **WASD** provides the same steering bias as a desktop alternative —
+  a nudge, not propulsion
 - Periodic **soup/water spawns** keep you fed; **lysin micro-spots**
   appear every ~10,000 ticks and dissolve membranes on contact
 - A membrane loop counts as **yours** when ≥ 40 % of its atoms are

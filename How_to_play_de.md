@@ -46,9 +46,10 @@ Shortcuts-Karte, Atom-Wörterbuch).
 
 ## Erste Schritte
 
-1. Projekt über HTTP ausliefern (Worker brauchen einen Origin):
-   `bash run.sh` oder `python3 -m http.server 9131`, dann
-   `http://localhost:9131/` öffnen.
+1. Projekt bauen und über HTTP ausliefern (Worker brauchen einen
+   Origin): `bash run.sh` baut und serviert; für die manuelle Variante
+   einmal `npm run build` ausführen, dann `python3 -m http.server 9131`
+   und `http://localhost:9131/` öffnen.
 2. Die Sim startet mit einer geseedeten Soup. Beobachte, wie Protozellen
    von selbst entstehen — oder öffne das **Controls**-Panel (`M` /
    ☰-Button), um einzugreifen.
@@ -105,11 +106,11 @@ passiert.
 ### World · Replenishment
 - **Drip** — periodische Nachlieferung; Regler setzen Intervalle in
   Ticks (Soup 100–3000, Standard 700 · Wasser 500–15000, Standard 4250)
-- **Burn** — Sim um N Iterationen vorspulen (Standard 100.000)
 - **Seed** — PRNG neu seeden und neu starten
 
 ### Physics
-- **speed** — Simulationsgeschwindigkeit (1–30, Standard 8)
+- **speed** — Simulationsrate (5–100 %, Standard 100 %); kleinere
+  Werte strecken die Schritte zu flüssiger Zeitlupe
 - **soup** — Soup-Dichte (0–100 %, Standard 60)
 - **damp** — Dämpfung gebundener Atome (0,50–1,00)
 
@@ -135,7 +136,9 @@ passiert.
 
 `G` schaltet den Spielmodus um: Du steuerst eine grüne Mikrobe.
 
-- **WASD** beeinflusst die Brownsche Bewegung deiner Zelle — ein
+- **Auf das Spielfeld drücken und halten** steuert die Mikrobe zur
+  Maus- oder Fingerposition
+- **WASD** bietet dieselbe Steuerung als Desktop-Alternative — ein
   Schubs, kein Antrieb
 - Periodische **Soup-/Wasser-Spawns** halten dich bei Kräften;
   **Lysin-Mikro-Spots** erscheinen ca. alle 10.000 Ticks und lösen

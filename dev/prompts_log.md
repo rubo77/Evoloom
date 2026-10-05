@@ -313,6 +313,9 @@ status bar covers the X. Add a true fullscreen in the manifest —
 model it on the fullscreen setting in Lalumo in /var/www/Musici,
 where I solved it correctly.
 
-## 26-10-05 10:35
-Later (re: cherry-picking to the MR branch) — first keep working on the
-main branch, there is still a lot to fix.
+## 26-10-05 08:10
+Can you read the copilot reviews in the PR? Adjust the branch with
+all of copilot's findings, using the titles he used (e.g.
+"Instrumented test asserts the wrong application package ID") as
+individual commits, if you find the suggestions sensible — do not
+believe copilot blindly.

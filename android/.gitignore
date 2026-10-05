@@ -102,3 +102,4 @@ app/src/main/res/xml/config.xml
 
 # Android Studio project metadata
 /.idea/
+!/.idea/.name

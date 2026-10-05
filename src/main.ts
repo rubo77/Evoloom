@@ -14,6 +14,11 @@
 //
 // No physics state lives here.
 
+// Injected by esbuild at build time from package.json "version"
+// (--define:APP_VERSION in the build script) so the credits modal
+// always shows the version that was actually bundled.
+declare const APP_VERSION: string;
+
 import { ControlMsg, SnapshotMsg, BurnProgressMsg, BurnDoneMsg, SaveStateMsg, LoadResultMsg, EventLogChunkMsg, SelectionExportMsg, SelectionState, CustomAtomDef, CustomRuleSpec, SaveState, STRIDE } from './snapshot';
 import { setCustomAtomColor as setGPUCustomColor } from './renderer-gpu';
 import { setClassicAtomColor, setEducationalAtomColor } from './renderer-2d';
@@ -2252,6 +2257,28 @@ if (labOpenBtn) labOpenBtn.addEventListener('click', () => openLab('editor'));
 if (dictBtn) dictBtn.addEventListener('click', () => openLab('dictionary'));
 if (labCloseBtn) labCloseBtn.addEventListener('click', closeLab);
 
+// ── Credits modal ────────────────────────────────────────────────────
+const creditsModal   = document.getElementById('credits-modal')    as HTMLElement | null;
+const creditsOpenBtn = document.getElementById('credits-open')     as HTMLButtonElement | null;
+const creditsClose   = document.getElementById('credits-close')    as HTMLButtonElement | null;
+const creditsVersion = document.getElementById('credits-version')  as HTMLElement | null;
+function openCredits(): void {
+  if (!creditsModal) return;
+  creditsModal.classList.add('shown');
+  creditsModal.setAttribute('aria-hidden', 'false');
+}
+function closeCredits(): void {
+  if (!creditsModal) return;
+  creditsModal.classList.remove('shown');
+  creditsModal.setAttribute('aria-hidden', 'true');
+}
+function isCreditsOpen(): boolean {
+  return !!creditsModal && creditsModal.classList.contains('shown');
+}
+if (creditsOpenBtn) creditsOpenBtn.addEventListener('click', openCredits);
+if (creditsClose) creditsClose.addEventListener('click', closeCredits);
+if (creditsVersion) creditsVersion.textContent = `Evoloom ${APP_VERSION}`;
+
 // ── Lab tabs (Editor / Dictionary) ────────────────────────────────────────
 const labTabs = document.querySelectorAll<HTMLButtonElement>('.lab-tab');
 const labTabEditor = document.getElementById('lab-tab-editor');
@@ -3086,6 +3113,7 @@ document.addEventListener('keydown', (e) => {
       setEditorStatus('Bond gesture cancelled.');
       return;
     }
+    if (isCreditsOpen()) { closeCredits(); return; }
     if (isLabOpen()) { closeLab(); return; }
     if (isInspectorOpen()) { closeInspector(); return; }
     if (isPanelOpen()) { closePanel(); return; }

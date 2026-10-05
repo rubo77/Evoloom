@@ -638,15 +638,15 @@ export function drawGPU(
       }
       pCount++;
     } else {
-      // Active organelle / colored atom
-      const h = atomHash32(i, type, state);
-      const sizeMul = 1.1 + (h % 900) / 1000;
-      const pr = r * sizeMul;
+      // Active organelle / colored atom. The per-atom size jitter is a
+      // microscope-view effect; the educational view draws uniform discs
+      // (same as the 2D renderer) so atom size does not fake a state.
       const so = oCount * 8;
       _organelleStage[so + 0] = px;
       _organelleStage[so + 1] = py;
-      _organelleStage[so + 2] = pr;
       if (bacteriaView) {
+        const h = atomHash32(i, type, state);
+        _organelleStage[so + 2] = r * (1.1 + (h % 900) / 1000);
         const ch = String.fromCharCode(type);
         const isDense = ch === 'd' || ch === 'e' || ch === 'f';
         const isBonded = (flags & 1) !== 0;
@@ -657,6 +657,7 @@ export function drawGPU(
       } else {
         const ch = String.fromCharCode(type);
         const c = colorFor(ch);
+        _organelleStage[so + 2] = r;
         _organelleStage[so + 3] = 0.0; // soft blob
         _organelleStage[so + 4] = c[0]; _organelleStage[so + 5] = c[1]; _organelleStage[so + 6] = c[2];
         _organelleStage[so + 7] = ALPHA.organelle;

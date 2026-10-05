@@ -24,7 +24,7 @@ test('guided tutorial gates task steps on real user actions', async ({ page }) =
 
   await page.click('#tutorial-btn');
   await expect(page.locator('#tutorial-card')).toBeVisible();
-  await expectStep(page, 'Welcome to Evoloom');
+  await expectStep(page, 'Welcome to Primordium');
 
   await page.click('#tut-next');          // soup info
   await expectStep(page, 'atoms, states, bonds');

@@ -649,6 +649,11 @@ function postSnapshot(): void {
     winCountdownIter: winCountdown,
     loseCountdownIter: loseCountdown,
     playerMembraneFrac: lastPlayerMembraneFrac,
+    // Effective iteration rate right now: ticks/s × steps/tick × the
+    // rate limiter. Adaptive pacing and the speed slider move it
+    // between ~60 × 1 × 0.05 and 60 × MAX_SPF × 1, so the HUD converts
+    // the iteration countdowns with this value, not a fixed constant.
+    itersPerSec: TARGET_HZ * stepsPerFrame * simRate,
   };
   self.postMessage(msg, [
     atoms.buffer as Transferable,

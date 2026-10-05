@@ -858,11 +858,9 @@ export type GameHudStats = {
   membraneFrac: number;  // sealed share of player membrane atoms, 0..1
   winIters: number;      // iterations until victory (0 while enemies remain)
   loseIters: number;     // iterations until death (0 while a player loop lives)
+  itersPerSec: number;   // current effective iteration rate from the worker
   gameStatus: number;    // 0 playing, 1 won, 2 lost
 };
-
-// Iterations ≈ steps: the worker's win/lose timers assume ~480 steps/s.
-const HUD_ITERS_PER_SEC = 480;
 
 const HUD_GOOD = '#5edca0';
 const HUD_WARN = '#e0b040';
@@ -898,10 +896,10 @@ export function drawGameHUD2D(ctx: CanvasRenderingContext2D, atoms: Float32Array
     status = 'dead';
     statusColor = HUD_BAD;
   } else if (stats.playerCells === 0) {
-    status = `membrane down — reseal in ${(stats.loseIters / HUD_ITERS_PER_SEC).toFixed(1)}s!`;
+    status = `membrane down — reseal in ${(stats.loseIters / Math.max(1, stats.itersPerSec)).toFixed(1)}s!`;
     statusColor = HUD_BAD;
   } else if (stats.winIters > 0) {
-    status = `victory in ${(stats.winIters / HUD_ITERS_PER_SEC).toFixed(1)}s`;
+    status = `victory in ${(stats.winIters / Math.max(1, stats.itersPerSec)).toFixed(1)}s`;
     statusColor = HUD_GOOD;
   }
   const textX = hudTextX(ctx);

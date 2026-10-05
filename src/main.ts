@@ -3186,6 +3186,7 @@ function drawHud(ctx: CanvasRenderingContext2D, snap: SnapshotMsg): void {
       playerCells: snap.playerCount,
       enemyCells: snap.enemyCount,
       membraneFrac: snap.playerMembraneFrac,
+      itersPerSec: snap.itersPerSec,
       winIters: snap.winCountdownIter,
       loseIters: snap.loseCountdownIter,
       gameStatus: snap.gameStatus,

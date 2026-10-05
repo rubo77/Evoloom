@@ -1,10 +1,10 @@
-# Evoloom
+# Primordium
 
 A high-performance fork of Tim Hutton's **Squirm3** artificial-life system,
 with a microbe-steering game mode, water/soup brushes, surface-tension
 droplet physics, and WebGPU rendering.
 
-**Live version:** <https://evoloom.eclabs.de>
+**Live version:** <https://primordium.transcendiant.net/>
 
 See [How_to_play.md](./How_to_play.md) for the full manual (controls,
 play mode, atom dictionary, shortcuts) — deutsche Version:

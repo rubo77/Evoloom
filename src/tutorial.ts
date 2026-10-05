@@ -1,4 +1,4 @@
-// Evoloom — interactive guided tutorial.
+// Primordium — interactive guided tutorial.
 //
 // A coach overlay mixing explanation steps with task steps that only advance
 // once the player actually performs the action on the field (pause, select,
@@ -140,8 +140,8 @@ function buildDemoCell(): SelectionState {
 // ── Steps ───────────────────────────────────────────────────────────────────
 const STEPS: Step[] = [
   {
-    title: 'Welcome to Evoloom',
-    html: `Evoloom is an <b>artificial chemistry</b>: thousands of atoms drift
+    title: 'Welcome to Primordium',
+    html: `Primordium is an <b>artificial chemistry</b>: thousands of atoms drift
       through a 2D soup, react with their neighbors and form bonds — and out
       of that, membrane-enclosed cells emerge that copy their genome and
       divide.<br><br>This is a <b>guided tour</b>: some steps ask you to do
@@ -197,14 +197,14 @@ const STEPS: Step[] = [
     html: `<span class="tutorial-task">TASK — close the inspector
       yourself: the <b>✕</b> in its top-right corner, or
       <kbd>Esc</kbd>.</span><br><br><kbd>Esc</kbd> closes the topmost
-      thing everywhere in Evoloom — inspector, panel, lab.`,
+      thing everywhere in Primordium — inspector, panel, lab.`,
   },
   {
     title: 'Task: switch Select off',
     task: (d) => d.getBrush() === 'pan',
     html: `<span class="tutorial-task">TASK — click <b>🎯 Select</b> in the
       panel (<kbd>M</kbd>) again so it reads OFF.</span><br><br>With a brush
-      active you can't drag the canvas — every tool in Evoloom toggles back
+      active you can't drag the canvas — every tool in Primordium toggles back
       to panning.`,
   },
   {

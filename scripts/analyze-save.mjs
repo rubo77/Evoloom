@@ -1,4 +1,4 @@
-// Analyze an Evoloom save file: count atoms / bonds / droplets, detect every
+// Analyze a Primordium save file: count atoms / bonds / droplets, detect every
 // closed `a`-`a` membrane loop in the bond graph, and check which loops
 // geometrically enclose the centroids of other loops (i.e. meta-membrane
 // formation — one closed membrane wrapping a cluster of intact protocells).

@@ -1,4 +1,4 @@
-// Hydrolysis decomposition for Evoloom.
+// Hydrolysis decomposition for Primordium.
 // Water becomes a real atom type ('w'). Hydrolysis is implemented as a
 // per-tick sweep where each FRESH water atom (state 0) can break ONE
 // nearby non-protected bond per tick. On firing, the water transitions

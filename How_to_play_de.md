@@ -1,6 +1,6 @@
-# Evoloom — Anleitung
+# Primordium — Anleitung
 
-Evoloom ist eine künstliche Chemie: eine 2D-Welt voller Tausender
+Primordium ist eine künstliche Chemie: eine 2D-Welt voller Tausender
 Atome, die in Brownscher Bewegung umherdriften. Jedes Atom hat einen
 **Typ** (`a`–`f`, `w`, `p`), einen numerischen **Zustand** und kann
 **Bindungen** mit Nachbarn eingehen. Wann immer Atome aufeinandertreffen,
@@ -77,7 +77,7 @@ Dieselbe Dokumentation ist direkt in der App eingebaut:
 Neu bei künstlichen Chemien? [Organic Builder](https://github.com/rubo77/OrganicBuilder)
 ist ein kostenloses Schritt-für-Schritt-Tutorial, das genau dieses
 Atom/Zustand/Bindungs-Reaktionsmodell über kleine spielbare Challenges
-beibringt — der schnellste Weg zu verstehen, was in Evolooms Soup
+beibringt — der schnellste Weg zu verstehen, was in Primordiums Soup
 passiert.
 
 ## Ansichten

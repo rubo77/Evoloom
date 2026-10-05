@@ -1,4 +1,4 @@
-// Evoloom — central render theme.
+// Primordium — central render theme.
 //
 // THE place to tune the visuals: atom colors, translucency levels and the
 // three 'a'-membrane alphas (closed loop / open chain / free soup). Both

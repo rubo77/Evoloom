@@ -1,6 +1,6 @@
-# Evoloom — Manual
+# Primordium — Manual
 
-Evoloom is an artificial chemistry: a 2D world filled with thousands
+Primordium is an artificial chemistry: a 2D world filled with thousands
 of atoms drifting in Brownian motion. Every atom has a **type**
 (`a`–`f`, `w`, `p`), a numeric **state**, and can form **bonds** with
 neighbors. Whenever atoms bump into each other, a small table of
@@ -71,7 +71,7 @@ The same documentation is built into the app — you never have to leave it:
 New to artificial chemistries? [Organic Builder](https://github.com/rubo77/OrganicBuilder)
 is a free step-by-step tutorial app that teaches this exact
 atom/state/bond reaction model through small, playable challenges —
-the fastest way to understand what Evoloom's soup is doing.
+the fastest way to understand what Primordium's soup is doing.
 
 ## Views
 

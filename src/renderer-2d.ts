@@ -680,7 +680,7 @@ export function draw2DClassic(
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, gridW, gridH);
 
-  // Faint water droplet hint — Evoloom-only feature, kept very subtle so
+  // Faint water droplet hint — Primordium-only feature, kept very subtle so
   // the classic look stays close to Hutton's. Set to 0 alpha if you want
   // perfect Hutton fidelity.
   const dropCount = droplets[0] | 0;

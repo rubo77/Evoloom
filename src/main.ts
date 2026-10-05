@@ -1009,26 +1009,38 @@ function applyGameModeUI(): void {
   hideGameOverlay();
 }
 
-function toggleGame(): void {
-  gameMode = !gameMode;
-  gameBtn.textContent = gameMode ? '🦠 Exit game' : '🦠 Steer a microbe';
-  gameBtn.classList.toggle('active', gameMode);
-  send({ type: gameMode ? 'startGame' : 'endGame' });
-  if (gameMode) {
-    // The worker pre-selects a player atom in setupGame; the snapshot
-    // loop arms follow once that flag arrives.
-    armFollowOnSelection = true;
-  } else {
-    armFollowOnSelection = false;
-    setFollow(false);
-  }
+// UI-side match exit without sending 'endGame' — used both when the
+// user toggles play mode off and when a loaded save silently ends the
+// match on the worker (its inGame flag is reset on every load while
+// the loaded world must be kept, not rebuilt like endGame does).
+function exitGameModeUI(): void {
+  gameMode = false;
+  gameBtn.textContent = '🦠 Steer a microbe';
+  gameBtn.classList.remove('active');
+  armFollowOnSelection = false;
+  setFollow(false);
   keyState.w = keyState.a = keyState.s = keyState.d = false;
   steerTarget = null;
   send({ type: 'setPlayerInput', x: 0, y: 0 });
   applyGameModeUI();
-  logStatus(gameMode
-    ? 'Play mode ON — press & hold on the canvas to steer your microbe (WASD works too)'
-    : 'Play mode OFF — sandbox restored');
+}
+
+function toggleGame(): void {
+  if (gameMode) {
+    send({ type: 'endGame' });
+    exitGameModeUI();
+    logStatus('Play mode OFF — sandbox restored');
+    return;
+  }
+  gameMode = true;
+  gameBtn.textContent = '🦠 Exit game';
+  gameBtn.classList.add('active');
+  send({ type: 'startGame' });
+  // The worker pre-selects a player atom in setupGame; the snapshot
+  // loop arms follow once that flag arrives.
+  armFollowOnSelection = true;
+  applyGameModeUI();
+  logStatus('Play mode ON — press & hold on the canvas to steer your microbe (WASD works too)');
 }
 
 // ── HUD hide/show ─────────────────────────────────────────────────────────
@@ -2547,6 +2559,12 @@ function onLoadResult(msg: LoadResultMsg): void {
     statsRows.length = 0;
     updateCsvCount();
     if (typeof msg.seed === 'number') seedInput.value = String(msg.seed);
+    // The worker resets inGame on every load — exit the match UI too or
+    // the sandbox would show the game HUD over a world with no match.
+    if (gameMode) {
+      exitGameModeUI();
+      logStatus('Play mode OFF — world loaded');
+    }
     logStatus(`Loaded · iter ${(msg.iterations ?? 0).toLocaleString()} · ${(msg.cellCount ?? 0).toLocaleString()} atoms · sim resumed deterministically from saved RNG state`);
   } else {
     logStatus(`Load error: ${msg.error ?? 'unknown'}`);

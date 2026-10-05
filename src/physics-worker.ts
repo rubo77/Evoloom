@@ -762,11 +762,11 @@ function loadSaveState(s: SaveState): string | null {
     cell.vel.x = s.cellVx[i];
     cell.vel.y = s.cellVy[i];
     cell.energy = s.cellEnergy[i];
-    // Player ownership only survives when a match is live at load time
-    // (e.g. a mid-game quickload). Restoring it otherwise — as with an
-    // autosave on page reload — would leave player-tinted cells in the
-    // sandbox with no match to own them.
-    cell.playerControlled = !!s.cellPlayer[i] && inGame;
+    // Player ownership is never restored: a load ends the match on
+    // both threads (inGame is reset below; the main thread leaves the
+    // game UI on loadResult), so tinted cells would have no match
+    // owning them.
+    cell.playerControlled = false;
     newCells.push(cell);
   }
   // Bump nextAtomId past the highest restored ID (or use the saved counter

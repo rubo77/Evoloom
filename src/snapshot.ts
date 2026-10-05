@@ -35,6 +35,7 @@ export type SnapshotMsg = {
   playerCount: number;       // # of full player loops
   winCountdownIter: number;  // iterations remaining before win is awarded (0 if not currently winning)
   loseCountdownIter: number; // iterations remaining before death is declared (0 while a live player loop exists)
+  playerMembraneFrac: number; // share of player 'a' atoms sealed in a closed loop (1 = intact, drops on breach)
 };
 
 export type ControlMsg =

@@ -298,3 +298,11 @@ When the game starts, the top-left HUD must change completely: it must
 show how many enemies / enemy elements there are and how big the player
 has grown. Analyze exactly what the win conditions are and how close one
 is to the goal or to death.
+
+## 26-10-04 22:10
+The game-mode HUD shows the enemy count twice, that makes no sense.
+Better to show only the remaining player membrane as a danger
+indicator instead of the atom count — or does showing both make
+sense? Also: is the plan in dev/evoloom-game-logic-and-hud-plan.md
+correct, and which parts are already implemented? Add (DONE) markers
+to what is done.

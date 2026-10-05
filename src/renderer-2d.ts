@@ -855,6 +855,7 @@ export function drawHUD2D(ctx: CanvasRenderingContext2D, iterations: number, ato
 export type GameHudStats = {
   playerCells: number;   // alive player membrane loops (0 = dying)
   enemyCells: number;    // alive enemy loops left to wipe out (0 = winning)
+  membraneFrac: number;  // sealed share of player membrane atoms, 0..1
   winIters: number;      // iterations until victory (0 while enemies remain)
   loseIters: number;     // iterations until death (0 while a player loop lives)
   gameStatus: number;    // 0 playing, 1 won, 2 lost
@@ -862,6 +863,10 @@ export type GameHudStats = {
 
 // Iterations ≈ steps: the worker's win/lose timers assume ~480 steps/s.
 const HUD_ITERS_PER_SEC = 480;
+
+const HUD_GOOD = '#5edca0';
+const HUD_WARN = '#e0b040';
+const HUD_BAD  = '#ff6464';
 
 export function drawGameHUD2D(ctx: CanvasRenderingContext2D, atoms: Float32Array, atomCount: number, stats: GameHudStats): void {
   ctx.save();
@@ -872,34 +877,48 @@ export function drawGameHUD2D(ctx: CanvasRenderingContext2D, atoms: Float32Array
   }
   ctx.font = '12px monospace';
   const line1 = `enemies: ${stats.enemyCells}`;
-  const line2 = `you: ${stats.playerCells} cell · ${playerAtoms} atoms`;
-  let status = `${stats.enemyCells} cells to wipe out`;
+  const line2 = `you:      ${playerAtoms} atoms`;
+  // Membrane bar — the danger indicator: torn-off membrane atoms keep the
+  // player flag outside the closed ring, so the sealed fraction drops as
+  // the cell is breached, well before the loop is gone entirely.
+  const frac = Math.max(0, Math.min(1, stats.membraneFrac));
+  const filled = Math.round(frac * 8);
+  const bar = '█'.repeat(filled) + '░'.repeat(8 - filled);
+  const membraneColor = stats.playerCells === 0 ? HUD_BAD
+    : frac >= 0.66 ? HUD_GOOD
+    : frac >= 0.33 ? HUD_WARN
+    : HUD_BAD;
+  const line3 = `membrane: ${bar} ${Math.round(frac * 100)}%`;
+  let status = 'wipe out every enemy';
   let statusColor = '#ffffff';
   if (stats.gameStatus === 1) {
     status = 'victory!';
-    statusColor = '#5edca0';
+    statusColor = HUD_GOOD;
   } else if (stats.gameStatus === 2) {
     status = 'dead';
-    statusColor = '#ff6464';
+    statusColor = HUD_BAD;
   } else if (stats.playerCells === 0) {
     status = `membrane down — reseal in ${(stats.loseIters / HUD_ITERS_PER_SEC).toFixed(1)}s!`;
-    statusColor = '#ff6464';
+    statusColor = HUD_BAD;
   } else if (stats.winIters > 0) {
     status = `victory in ${(stats.winIters / HUD_ITERS_PER_SEC).toFixed(1)}s`;
-    statusColor = '#5edca0';
+    statusColor = HUD_GOOD;
   }
   const textX = hudTextX(ctx);
   const textW = Math.max(
     ctx.measureText(line1).width,
     ctx.measureText(line2).width,
+    ctx.measureText(line3).width,
     ctx.measureText(status).width);
-  drawHudBox(ctx, textX, textW, 58);
+  drawHudBox(ctx, textX, textW, 74);
   const ty = HUD_STATS_RECT.y + 16;
   ctx.fillStyle = '#ffffff';
   ctx.fillText(line1, textX, ty);
   ctx.fillText(line2, textX, ty + 16);
+  ctx.fillStyle = membraneColor;
+  ctx.fillText(line3, textX, ty + 32);
   ctx.fillStyle = statusColor;
-  ctx.fillText(status, textX, ty + 32);
+  ctx.fillText(status, textX, ty + 48);
   drawHudLegend(ctx);
   ctx.restore();
 }

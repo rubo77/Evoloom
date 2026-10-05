@@ -3161,6 +3161,7 @@ function drawHud(ctx: CanvasRenderingContext2D, snap: SnapshotMsg): void {
     drawGameHUD2D(ctx, snap.atoms, snap.atomCount, {
       playerCells: snap.playerCount,
       enemyCells: snap.enemyCount,
+      membraneFrac: snap.playerMembraneFrac,
       winIters: snap.winCountdownIter,
       loseIters: snap.loseCountdownIter,
       gameStatus: snap.gameStatus,

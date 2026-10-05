@@ -216,6 +216,7 @@ let noPlayerStartIter = -1; // same, for the player's loop
 let savedSandboxNoise = false;
 let savedSandboxHydro = false;
 let lastLoopCounts = { player: 0, enemy: 0 };
+let lastPlayerMembraneFrac = 0; // sealed share of player 'a' atoms, 0..1
 
 // Buffer pool — three quintuplets so we never starve while one is rendered and
 // one is in transit. Main returns each used set via a 'reuse' message.
@@ -385,13 +386,14 @@ function setupWild(): void {
 // Runs in the worker so the main thread never has to traverse the bond graph.
 type LoopInfo = { vertCount: number; isPredator: boolean; firstVertOffset: number };
 
-function findMembraneLoopsAndPack(cells: Cell[], indexMap: Map<Cell, number>, loopsBuf: Uint32Array): { loopCount: number; usedLen: number; playerLoops: number; enemyLoops: number } {
+function findMembraneLoopsAndPack(cells: Cell[], indexMap: Map<Cell, number>, loopsBuf: Uint32Array): { loopCount: number; usedLen: number; playerLoops: number; enemyLoops: number; playerMembraneFrac: number } {
   const visited = new Set<Cell>();
   const headers: LoopInfo[] = [];
   let writeIdx = 1;
   let totalVerts = 0;
   let playerLoops = 0;
   let enemyLoops  = 0;
+  let sealedPlayerMembrane = 0;
 
   for (const start of cells) {
     if (start.type !== 'a' || visited.has(start)) continue;
@@ -472,11 +474,27 @@ function findMembraneLoopsAndPack(cells: Cell[], indexMap: Map<Cell, number>, lo
       if (hasE && hasF) {
         if (kind === 2) playerLoops++; else enemyLoops++;
       }
+      if (kind === 2) sealedPlayerMembrane += chain.length;
     }
   }
 
+  // Membrane integrity for the game HUD: every player-controlled 'a' atom is
+  // membrane material — atoms torn free by predators/lysin keep the flag
+  // until absorbed elsewhere, so the sealed fraction reads 1.0 while the
+  // ring is intact and drops as the cell is breached.
+  let playerMembraneAtoms = 0;
+  for (const c of cells) {
+    if (c.type === 'a' && c.playerControlled) playerMembraneAtoms++;
+  }
+
   loopsBuf[0] = headers.length;
-  return { loopCount: headers.length, usedLen: writeIdx, playerLoops, enemyLoops };
+  return {
+    loopCount: headers.length,
+    usedLen: writeIdx,
+    playerLoops,
+    enemyLoops,
+    playerMembraneFrac: playerMembraneAtoms > 0 ? sealedPlayerMembrane / playerMembraneAtoms : 0,
+  };
 }
 
 // Real surface tension fuses droplets the moment they touch. We loop until
@@ -553,6 +571,7 @@ function packSnapshot(atomsBuf: Float32Array, atomIdsBuf: Uint32Array, loopsBuf:
   const loopRes = findMembraneLoopsAndPack(cells, indexMap, loopsBuf);
   lastLoopCounts.player = loopRes.playerLoops;
   lastLoopCounts.enemy  = loopRes.enemyLoops;
+  lastPlayerMembraneFrac = loopRes.playerMembraneFrac;
   if (inGame && gameStatus === 0) {
     if (loopRes.playerLoops === 0) {
       // Grace window mirrors the win path: membranes open transiently while
@@ -629,6 +648,7 @@ function postSnapshot(): void {
     enemyCount:  lastLoopCounts.enemy,
     winCountdownIter: winCountdown,
     loseCountdownIter: loseCountdown,
+    playerMembraneFrac: lastPlayerMembraneFrac,
   };
   self.postMessage(msg, [
     atoms.buffer as Transferable,

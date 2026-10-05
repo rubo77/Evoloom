@@ -1215,7 +1215,13 @@ const dampVal     = document.getElementById('damp-val')!;
 // Speed is a rate limit, not a step multiplier — 100% lets the worker's
 // auto-pacing run flat out, lower values stretch steps across ticks for
 // smooth slow motion without tearing the frame rate.
-let simRate = 1;
+// Browsers restore range inputs to their last value on reload without
+// firing 'input', so the model and label must come from the DOM, not a
+// hard-coded default — otherwise the slider could show 5% while the sim
+// runs at 100%.
+let simRate = parseInt(speedSlider.value) / 100;
+speedVal.textContent = speedSlider.value + '%';
+send({ type: 'setSimRate', v: simRate });
 speedSlider.addEventListener('input', () => {
   simRate = parseInt(speedSlider.value) / 100;
   speedVal.textContent = speedSlider.value + '%';

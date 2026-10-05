@@ -319,11 +319,13 @@ const STEPS: Step[] = [
     title: 'Task: enter play mode',
     task: (d, saw) => saw('startGame') || d.isGameMode(),
     enter: (d) => d.closePanel(),
-    html: `<span class="tutorial-task">TASK — press <kbd>G</kbd> to enter
-      <b>play mode</b>.</span><br><br>The green microbe will be yours:
-      <b>WASD</b> nudges its Brownian drift. You win when no enemy cell
-      survives ~5 s with a closed membrane — you lose if all your cells
-      are lysed.`,
+    html: `<span class="tutorial-task">TASK — enter <b>play mode</b>:
+      press <kbd>G</kbd>, or reopen <b>Controls</b> (<kbd>M</kbd> / ☰)
+      and tap 🦠 <b>Steer a microbe</b>.</span><br><br>The green microbe
+      will be yours: <b>press &amp; hold on the canvas</b> to steer it
+      toward the pointer — <b>WASD</b> does the same on a keyboard.
+      You win when no enemy cell survives ~5 s with a closed membrane —
+      you lose if all your cells are lysed.`,
   },
   {
     title: "You're playing now",

@@ -16,7 +16,10 @@ import { spawnDart, updateDarts } from '../src/dart';
 
 const W = 800, H = 500;
 const PLAYER = { x: 500, y: 250 };
-const ENEMY  = { x: 250, y: 250 };
+// The enemy sits 40 units off the firing line — without terminal
+// guidance the dart would graze past; the homing blend must curve it
+// into contact for this probe to pass.
+const ENEMY  = { x: 250, y: 290 };
 
 const grid = new Grid();
 grid.create(W, H);

@@ -631,10 +631,18 @@ export function drawGPU(
         _particleStage[so + 1] = py;
         _particleStage[so + 2] = r;
         _particleStage[so + 3] = 0.0;  // hard disc
-        _particleStage[so + 4] = c[0]; _particleStage[so + 5] = c[1]; _particleStage[so + 6] = c[2];
-        _particleStage[so + 7] = ch === 'p' ? ALPHA.soupLysin
-                                          : ch === 'a' ? ALPHA.aFree
-                                          : ALPHA.soup;
+        if (flags & 32) {
+          // Propelled dart atom — glow bright gold so the shot reads
+          // clearly in flight (matches the 2D renderer's tracer pass).
+          _particleStage[so + 2] = r * 1.4;
+          _particleStage[so + 4] = 1.0; _particleStage[so + 5] = 0.78; _particleStage[so + 6] = 0.24;
+          _particleStage[so + 7] = 0.95;
+        } else {
+          _particleStage[so + 4] = c[0]; _particleStage[so + 5] = c[1]; _particleStage[so + 6] = c[2];
+          _particleStage[so + 7] = ch === 'p' ? ALPHA.soupLysin
+                                            : ch === 'a' ? ALPHA.aFree
+                                            : ALPHA.soup;
+        }
       }
       pCount++;
     } else {

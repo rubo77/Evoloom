@@ -120,6 +120,20 @@ Fixed with `overflow: clip` (clips identically, never scrolls).
 log, cooldown blocks immediate re-press, reload re-arms, pad hides on
 exit) · tutorial.spec.js still green · tsc + build + 14/14 smoke tests.
 
+## Iteration 2 — tracers, homing, kill feed
+
+- **Tracer rendering:** snapshot flag bit5 marks atoms still under
+  thrust; the 2D renderer draws them as bright gold discs with a white
+  rim, the GPU renderer as bright 1.4× discs. Shots are now clearly
+  visible in flight instead of blending into ambient lysin soup.
+- **Terminal guidance:** inside 150 units a cluster blends its shared
+  thrust vector 8%/tick toward the nearest bonded non-player 'a' atom.
+  Short range + gentle turn = aim assist, not lock-on. Verified in
+  `dart-sim.ts` with the enemy placed 40 units off the firing line:
+  the dart curved from y=250 to y≈264 and detonated at iter 52.
+- **Kill feed:** `☠ Enemy down — N left` in the status line whenever
+  the enemy loop count drops mid-match.
+
 ## Test plan
 
 - Playwright: enter game mode → dispatch fire → assert projectile atoms

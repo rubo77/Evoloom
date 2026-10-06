@@ -8,7 +8,9 @@
 //   [0] x
 //   [1] y
 //   [2] packed: (typeCharCode << 16) | state    (read as f32 bit-pattern? — no, store as-is)
-//   [3] flags: bit0 = bonded, bit1 = predator-membrane (state>=Q && type=='a')
+//   [3] flags: bit0 = bonded, bit1 = predator-membrane (state>=Q && type=='a'),
+//        bit2 = 'a' atom, bit3 = playerControlled, bit4 = selected,
+//        bit5 = propelled dart atom (lysin shot still under thrust)
 //
 // We store packed data as Float32 by reinterpreting bits via a helper view —
 // see encodePack/decodePack below.

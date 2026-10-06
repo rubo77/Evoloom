@@ -447,6 +447,21 @@ export function draw2D(
     }
   }
 
+  // ── Dart tracers — propelled lysin atoms (flag bit5) glow bright gold
+  // with a white rim so the player's shots read clearly mid-flight ────
+  ctx.fillStyle = 'rgba(255, 200, 60, 0.95)';
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  for (let i = 0; i < atomCount; i++) {
+    if (!((atoms[i * STRIDE + 3] | 0) & 32)) continue;
+    const px = _displayX[i] * scale, py = _displayY[i] * scale;
+    ctx.moveTo(px + r * 1.3, py);
+    ctx.arc(px, py, r * 1.3, 0, Math.PI * 2);
+  }
+  ctx.fill();
+  ctx.stroke();
+
   // ── Build inLoop bit-vector so we don't redraw closed-loop membrane bonds ─
   const inLoop = new Uint8Array(atomCount);
   {

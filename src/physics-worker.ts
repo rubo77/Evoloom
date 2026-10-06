@@ -606,9 +606,11 @@ function packSnapshot(atomsBuf: Float32Array, atomIdsBuf: Uint32Array, loopsBuf:
     if (c.type === 'a') flags |= 4;
     if (c.playerControlled) flags |= 8;
     if (selectedSet.has(c)) flags |= 16; // bit 4 = selected, drives the halo on the main thread
+    const thrusting = c.thrustUntilIter > grid.iterations;
+    if (thrusting) flags |= 32; // bit 5 = propelled dart atom — rendered as a glowing tracer
     atomsBuf[o + 3] = flags;
     atomIdsBuf[i] = c.id >>> 0;
-    if (c.thrustUntilIter > grid.iterations) dartAtoms++;
+    if (thrusting) dartAtoms++;
   }
   lastDartCount = dartAtoms;
   // Zero unused tail so main can't see stale IDs from a prior snapshot.

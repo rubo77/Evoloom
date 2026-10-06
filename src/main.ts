@@ -1058,6 +1058,7 @@ function toggleGame(): void {
 const firePad = document.getElementById('fire-pad') as HTMLElement | null;
 const fireNeedle = document.getElementById('fire-needle') as HTMLElement | null;
 let lastFireCooldownIter = 0; // worker-side reload, mirrored per snapshot
+let prevEnemyCount = -1; // last snapshot's enemy loop count (-1 outside a match)
 
 if (firePad) {
   firePad.addEventListener('pointerdown', (e) => {
@@ -3279,6 +3280,13 @@ function loop(): void {
       // (drawHud only runs in educational view with the HUD visible).
       lastFireCooldownIter = snap.fireCooldownIter;
       firePad?.style.setProperty('--cd', snap.fireCooldownFrac.toFixed(3));
+      // Kill feed — announce each destroyed enemy loop in the status line.
+      if (snap.gameStatus === 0 && prevEnemyCount >= 0 && snap.enemyCount < prevEnemyCount) {
+        logStatus(`☠ Enemy down — ${snap.enemyCount} left`);
+      }
+      prevEnemyCount = snap.gameStatus === 0 ? snap.enemyCount : -1;
+    } else if (prevEnemyCount !== -1) {
+      prevEnemyCount = -1;
     }
     if (viewMode === 'classic') {
       // Classic mode renders entirely onto the overlay canvas (which always

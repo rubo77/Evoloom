@@ -11,6 +11,11 @@ export const FIRE_COOLDOWN_TICKS  = 720;   // ~1.5 s between shots at 480 it/s
 export const DART_FUEL_TICKS      = 600;   // thrust burn, then the dart drifts
 const DART_THRUST                 = 0.10;  // per-step kick — ~5× the steering kick
 const DART_ATOMS                  = 5;     // lysin payload atoms per dart
+// Terminal guidance — a dart veers toward nearby enemy membrane material
+// so near-misses curve into hits. Short range and a gentle turn rate
+// keep it an assist, not a lock-on.
+const DART_HOMING_RANGE           = 150;   // world units — ~25 atom radii
+const DART_HOMING_BLEND           = 0.08;  // thrust vector pull per tick
 const DART_SPAWN_CLEARANCE        = 4;     // × RADIUS beyond the player ring —
                                            // > REACTION_RANGE (2.5) so the shot
                                            // can never dissolve the firing cell
@@ -66,6 +71,29 @@ export function updateDarts(grid: Grid, clusters: Cell[][], now: number): Cell |
     if (cluster[0].thrustUntilIter <= now) {
       clusters.splice(i, 1); // fuel spent — drifts as loose lysin now
       continue;
+    }
+    // Terminal guidance — pull the shared thrust vector toward the
+    // nearest enemy membrane atom inside homing range.
+    let cx = 0, cy = 0;
+    for (const a of cluster) { cx += a.loc.x; cy += a.loc.y; }
+    cx /= cluster.length; cy /= cluster.length;
+    const near = grid.getAllWithinRadius(cx, cy, DART_HOMING_RANGE);
+    let best: Cell | null = null, bestD = Infinity;
+    for (const c of near) {
+      if (c.type !== 'a' || c.playerControlled || c.bonds.size === 0) continue;
+      const d = Math.hypot(c.loc.x - cx, c.loc.y - cy);
+      if (d < bestD) { bestD = d; best = c; }
+    }
+    if (best) {
+      const tx = (best.loc.x - cx) / bestD;
+      const ty = (best.loc.y - cy) / bestD;
+      const head = cluster[0];
+      let hx = head.thrustX + (tx * DART_THRUST - head.thrustX) * DART_HOMING_BLEND;
+      let hy = head.thrustY + (ty * DART_THRUST - head.thrustY) * DART_HOMING_BLEND;
+      const hm = Math.hypot(hx, hy) || 1;
+      hx = hx / hm * DART_THRUST;
+      hy = hy / hm * DART_THRUST;
+      for (const a of cluster) { a.thrustX = hx; a.thrustY = hy; }
     }
     for (const atom of cluster) {
       const near = grid.getAllWithinRadius(atom.loc.x, atom.loc.y, RADIUS * 2.4);

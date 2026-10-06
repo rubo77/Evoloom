@@ -1177,6 +1177,18 @@ function hideGameOverlay(): void {
   overlayEl.style.display = 'none';
 }
 
+// End-of-match actions — the overlay blocks nothing else, so the only
+// way forward used to be the G shortcut. "again" re-runs the same
+// worker start path as the first match; "sandbox" is the normal exit.
+function restartMatch(): void {
+  matchStartAt = performance.now();
+  send({ type: 'startGame' });
+  armFollowOnSelection = true;
+  hideGameOverlay();
+}
+document.getElementById('game-again')?.addEventListener('click', restartMatch);
+document.getElementById('game-exit')?.addEventListener('click', () => { if (gameMode) toggleGame(); });
+
 // ── WASD input → biased Brownian. We track which of W/A/S/D are down and
 // send a normalized direction vector to the worker whenever the set changes.
 const keyState = { w: false, a: false, s: false, d: false };
@@ -3164,6 +3176,13 @@ document.addEventListener('keydown', (e) => {
     if (e.code === 'KeyS') keyState.s = true;
     if (e.code === 'KeyD') keyState.d = true;
     pushPlayerInput();
+    return;
+  }
+  // Enter on the end-of-match overlay restarts immediately — the
+  // overlay's ↻ button advertises the same shortcut.
+  if (gameMode && e.code === 'Enter' && overlayShownStatus !== 0) {
+    e.preventDefault();
+    restartMatch();
     return;
   }
   // Esc: pending bond → lab → inspector → panel → reset brush.

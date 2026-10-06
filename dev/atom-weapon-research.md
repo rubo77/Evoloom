@@ -271,6 +271,21 @@ when the magazine is dry.
   but the match was frozen (esbuild only; tsc caught it instantly).
   Lesson reinforced: tsc before every browser probe.
 
+## Iteration 8 — end-of-match restart
+
+The death/victory overlay was a dead end: `pointer-events: none`, no
+buttons, and the only way out was the G shortcut (exit to sandbox,
+then re-enter) — invisible to anyone who didn't know it.
+
+- The overlay now carries **↻ play again** (primary) and **✕ sandbox**
+  inside `#game-overlay-buttons` — the only clickable elements in the
+  still click-through overlay.
+- `restartMatch()` re-runs the worker's `startGame` path (fresh world,
+  fresh magazine, follow re-armed, feed warmup reset) — identical to
+  the first match start. Enter triggers it while the overlay is up.
+- Verified with `restart-probe.cjs`: passive death → overlay with both
+  buttons → Enter → overlay closes, enemy tick returns, new match live.
+
 ## Test plan
 
 - Playwright: enter game mode → dispatch fire → assert projectile atoms

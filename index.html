@@ -440,6 +440,31 @@
       color: var(--text-default);
       letter-spacing: 0.06em;
     }
+    /* End-of-match actions — the overlay itself stays click-through;
+       only the buttons are interactive. */
+    #game-overlay-buttons {
+      display: flex;
+      gap: 14px;
+      pointer-events: auto;
+    }
+    #game-overlay-buttons button {
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+      padding: 10px 22px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+      cursor: pointer;
+      letter-spacing: 0.05em;
+    }
+    #game-overlay-buttons button:hover {
+      background: rgba(255, 255, 255, 0.18);
+    }
+    #game-overlay-buttons .primary {
+      border-color: var(--c-primary, #d4a64f);
+      color: var(--c-primary, #d4a64f);
+    }
 
     /* ── Status line ──────────────────────────────────────────────────────
        A telegraphic line that pulses on every action. Mono font for the
@@ -1721,6 +1746,10 @@
     <div id="game-overlay">
       <div id="game-overlay-title"></div>
       <div id="game-overlay-sub"></div>
+      <div id="game-overlay-buttons">
+        <button id="game-again" class="primary">↻ play again <kbd>↵</kbd></button>
+        <button id="game-exit">✕ sandbox</button>
+      </div>
     </div>
 
     <!-- Panel backdrop — only visible on mobile when panel is open.

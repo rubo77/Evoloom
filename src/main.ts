@@ -1080,6 +1080,7 @@ function toggleGame(): void {
 const firePad = document.getElementById('fire-pad') as HTMLElement | null;
 const fireNeedle = document.getElementById('fire-needle') as HTMLElement | null;
 const fireEnemy = document.getElementById('fire-enemy') as HTMLElement | null;
+const fireLysin = document.getElementById('fire-lysin') as HTMLElement | null;
 let lastFireCooldownIter = 0; // worker-side reload, mirrored per snapshot
 let minEnemyCount = -1; // lowest enemy loop count seen this match (-1 outside a match)
 let matchStartAt = -1e9; // performance.now() of match start — suppresses the kill-feed during loop-detection warmup
@@ -3322,6 +3323,15 @@ function loop(): void {
           fireEnemy.style.transform = `rotate(${deg}deg)`;
         } else {
           fireEnemy.classList.remove('shown');
+        }
+      }
+      if (fireLysin) {
+        if (snap.lysinDist > 0) {
+          fireLysin.classList.add('shown');
+          const deg = Math.atan2(snap.lysinDirY, snap.lysinDirX) * 180 / Math.PI + 90;
+          fireLysin.style.transform = `rotate(${deg}deg)`;
+        } else {
+          fireLysin.classList.remove('shown');
         }
       }
       // Kill feed — enemies replicate mid-match, so only a drop below

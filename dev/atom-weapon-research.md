@@ -246,6 +246,31 @@ counts `[GAME]` bite logs + the end overlay — the live balance probe.
 - Telemetry: `[GAME] nearest enemy N units` logs every 1200 iterations
   while a match runs, so approach speed stays observable.
 
+## Iteration 7 — the full loop: lysin bearing + nearby supply drops
+
+The fight probe (`fight-probe.cjs`) plays the real game loop: kite the
+red bearing tick, fire along it when reloaded, steer to the amber dot
+when the magazine is dry.
+
+- **Lysin bearing:** snapshot adds `lysinDirX/Y` + `lysinDist` — the
+  nearest *free* lysin atom (supply spots AND spent dart payloads both
+  count; armed darts don't). Rendered as an amber rim dot
+  (`#fire-lysin`): the pad is now a real compass — red = threat,
+  amber = ammo, gold = aim.
+- **Supply drops near the player:** `spawnLysinSpot()` used to drop
+  35 atoms at a random arena position every 10k iters — unreachable
+  while kiting (the fight probe never rearmed and died dry at ~70 s).
+  Spots now land 300–800 units from the player centroid — still a
+  risky dive (lysin eats your own membrane) but reachable.
+- **Measured result (bot, crude aim):** 3 darts → 2 kills in the first
+  ~15 s, rearm flythroughs net +1–2 atoms per pass (pickup radius is
+  deliberately small), magazine rebuilt to 9, zero bites in ~90 s —
+  the match is now winnable instead of a countdown.
+- **Bug caught by the probe:** a `cnt`/`pcnt` typo in the bearing code
+  crashed the worker's first in-game snapshot — the pad looked alive
+  but the match was frozen (esbuild only; tsc caught it instantly).
+  Lesson reinforced: tsc before every browser probe.
+
 ## Test plan
 
 - Playwright: enter game mode → dispatch fire → assert projectile atoms

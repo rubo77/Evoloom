@@ -248,15 +248,25 @@ const loopsPool:    Uint32Array[]  = [allocLoopsBuffer(),    allocLoopsBuffer(),
 const bondsPool:    Uint32Array[]  = [allocBondsBuffer(),    allocBondsBuffer(),    allocBondsBuffer()];
 const dropletsPool: Float32Array[] = [allocDropletsBuffer(), allocDropletsBuffer(), allocDropletsBuffer()];
 
-// Drop a tight micro-cluster of lysin atoms at a single random spot. Used in
-// game mode to add scarce-but-deadly tools rather than blanket coverage.
+// Drop a tight micro-cluster of lysin atoms in the player's general
+// neighborhood — supply drops rather than arena lottery: a kiting
+// player can reach ammo without crossing the whole arena, but the
+// spot still lands at a risky offset (lysin eats the firing membrane
+// too). Used in game mode only.
 function spawnLysinSpot(): void {
-  const cx = gridW * (0.18 + Math.random() * 0.64);
-  const cy = gridH * (0.18 + Math.random() * 0.64);
+  let px = gridW / 2, py = gridH / 2, cnt = 0;
+  for (const c of grid.getCells()) {
+    if (c.playerControlled) { px += c.loc.x; py += c.loc.y; cnt++; }
+  }
+  if (cnt > 0) { px /= cnt; py /= cnt; }
+  const ang = Math.random() * Math.PI * 2;
+  const dist = 300 + Math.random() * 500;
+  const cx = Math.max(80, Math.min(gridW - 80, px + Math.cos(ang) * dist));
+  const cy = Math.max(80, Math.min(gridH - 80, py + Math.sin(ang) * dist));
   for (let n = 0; n < LYSIN_PER_SPOT; n++) {
-    const ang = Math.random() * Math.PI * 2;
+    const a = Math.random() * Math.PI * 2;
     const r = Math.sqrt(Math.random()) * 55;
-    grid.createCell(cx + Math.cos(ang) * r, cy + Math.sin(ang) * r, 'p', 0);
+    grid.createCell(cx + Math.cos(a) * r, cy + Math.sin(a) * r, 'p', 0);
   }
 }
 
@@ -781,9 +791,11 @@ function postSnapshot(): void {
   const fireCooldown = inGame
     ? Math.max(0, FIRE_COOLDOWN_TICKS - (grid.iterations - lastFireIter))
     : 0;
-  // Bearing to the nearest enemy membrane atom — drives the red tick
-  // on the fire pad so the player can aim at offscreen threats.
+  // Bearings for the fire-pad compass: red tick to the nearest enemy
+  // membrane atom, amber tick to the nearest free lysin atom (spent
+  // dart payloads and supply spots both count — armed darts don't).
   let enemyDirX = 0, enemyDirY = 0, enemyDist = 0;
+  let lysinDirX = 0, lysinDirY = 0, lysinDist = 0;
   if (inGame && gameStatus === 0) {
     let pcx = 0, pcy = 0, pcnt = 0;
     for (const c of grid.getCells()) {
@@ -792,21 +804,30 @@ function postSnapshot(): void {
     if (pcnt > 0) {
       pcx /= pcnt; pcy /= pcnt;
       let best = Infinity, bx = 0, by = 0;
+      let bestP = Infinity, px = 0, py = 0;
       for (const c of grid.getCells()) {
-        if (c.type !== 'a' || c.playerControlled || c.bonds.size === 0) continue;
         const dx = c.loc.x - pcx, dy = c.loc.y - pcy;
         const d = dx * dx + dy * dy;
-        if (d < best) { best = d; bx = dx; by = dy; }
+        if (c.type === 'a' && !c.playerControlled && c.bonds.size > 0) {
+          if (d < best) { best = d; bx = dx; by = dy; }
+        } else if (c.type === 'p' && c.bonds.size === 0 && c.thrustUntilIter <= grid.iterations) {
+          if (d < bestP) { bestP = d; px = dx; py = dy; }
+        }
       }
       if (best < Infinity) {
         enemyDist = Math.sqrt(best);
         enemyDirX = bx / enemyDist;
         enemyDirY = by / enemyDist;
       }
+      if (bestP < Infinity) {
+        lysinDist = Math.sqrt(bestP);
+        lysinDirX = px / lysinDist;
+        lysinDirY = py / lysinDist;
+      }
       // Threat telemetry — approach speed tuning lives or dies by this
       // number, so it stays visible in the console while a match runs.
       if (grid.iterations % 1200 === 0) {
-        console.log(`[GAME] nearest enemy ${enemyDist > 0 ? enemyDist.toFixed(0) : '—'} units`);
+        console.log(`[GAME] nearest enemy ${enemyDist > 0 ? enemyDist.toFixed(0) : '—'} units · lysin ${lysinDist > 0 ? lysinDist.toFixed(0) : '—'}`);
       }
     }
   }
@@ -838,6 +859,9 @@ function postSnapshot(): void {
     enemyDirX,
     enemyDirY,
     enemyDist,
+    lysinDirX,
+    lysinDirY,
+    lysinDist,
   };
   self.postMessage(msg, [
     atoms.buffer as Transferable,

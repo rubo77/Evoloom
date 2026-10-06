@@ -46,6 +46,9 @@ export type SnapshotMsg = {
   enemyDirX: number;          // unit vector player → nearest enemy membrane atom (0,0 when none)
   enemyDirY: number;
   enemyDist: number;          // distance to that atom (0 when no enemy membrane exists)
+  lysinDirX: number;          // unit vector player → nearest free lysin atom (0,0 when none)
+  lysinDirY: number;
+  lysinDist: number;          // distance to it (0 when no free lysin exists)
 };
 
 // Lysin atoms banked at match start — shared by the worker (authoritative

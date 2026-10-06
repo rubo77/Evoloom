@@ -213,7 +213,10 @@ const LOSE_NO_PLAYER_TICKS    = 480;   // ~1 sec grace — a transient frame wit
 // Lysin dart — the game-mode projectile fired from the fire pad
 // (spawn + lifecycle live in dart.ts, shared with dev/dart-sim.ts).
 const DART_AMMO_MAX        = 50;   // magazine cap — 10 darts
-const AMMO_PICKUP_RANGE    = RADIUS * 2.2;
+// One flythrough of a lysin spot should bank roughly a dart's worth —
+// a radius that needs repeated tight passes makes the ammo loop the
+// bottleneck the fight probe measured (kill rate ~1 dart/45 s).
+const AMMO_PICKUP_RANGE    = RADIUS * 3.5;
 // Enemy pressure — membranes drift toward the player and grind its
 // ring on contact. A constant kick would be wrong here: bonded atoms
 // keep their velocity (bondedDamping = 1.0), so ANY persistent kick

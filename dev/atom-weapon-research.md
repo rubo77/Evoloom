@@ -301,6 +301,29 @@ bite was effectively a death sentence.
 - `lastBiteIter` resets on match start and save-load like the other
   match clocks.
 
+## Iteration 10 — win-ability tuning + proximity pulse
+
+Two more probes refined the picture: a fully aggressive bot (hunt the
+bearing to contact) dies in ~19 s — head-on approaches are suicide —
+while the kiting fight bot's bottleneck was ammo throughput, not
+survival (rearm→fire cycle ~45 s per dart, +1–2 atoms per flythrough).
+
+- **Pickup radius** `RADIUS × 2.2 → ×3.5`: one spot flythrough now
+  banks ~3 atoms (measured +3/pass), roughly a dart per pass instead
+  of a dart per three passes.
+- **Homing** 150 → 200 units, blend 8 % → 10 %/tick: long shots waste
+  less of the scarce magazine — the probe scored 3 kills on 4 darts.
+- **Proximity pulse:** the enemy bearing tick gets `data-dist` plus a
+  `close` class below 220 units → the red tick blinks as the threat
+  closes in (bite range is close behind). Also exposes distance to
+  probes/tests.
+- Balance readout so far: idle ~60 s · pure kiting ~50–90 s (swarm
+  encircles) · fight+kite+rearm 90 s+ alive with 3 kills on a crude
+  bot — hard but winnable; a human aims better than bearing-blind
+  shots.
+- `win-probe.cjs` / `fight-probe.cjs` stay in dev/playwright as the
+  balance harnesses for future tuning.
+
 ## Test plan
 
 - Playwright: enter game mode → dispatch fire → assert projectile atoms

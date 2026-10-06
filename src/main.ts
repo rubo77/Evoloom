@@ -3338,10 +3338,14 @@ function loop(): void {
       if (fireEnemy) {
         if (snap.enemyDist > 0) {
           fireEnemy.classList.add('shown');
+          fireEnemy.dataset.dist = snap.enemyDist.toFixed(0);
+          // Proximity pulse — the tick blinks faster as the threat closes.
+          fireEnemy.classList.toggle('close', snap.enemyDist < 220);
           const deg = Math.atan2(snap.enemyDirY, snap.enemyDirX) * 180 / Math.PI + 90;
           fireEnemy.style.transform = `rotate(${deg}deg)`;
         } else {
-          fireEnemy.classList.remove('shown');
+          fireEnemy.classList.remove('shown', 'close');
+          delete fireEnemy.dataset.dist;
         }
       }
       if (fireLysin) {

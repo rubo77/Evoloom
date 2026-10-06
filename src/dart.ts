@@ -15,8 +15,8 @@ export const DART_ATOMS           = 5;     // lysin payload atoms per dart —
 // Terminal guidance — a dart veers toward nearby enemy membrane material
 // so near-misses curve into hits. Short range and a gentle turn rate
 // keep it an assist, not a lock-on.
-const DART_HOMING_RANGE           = 150;   // world units — ~25 atom radii
-const DART_HOMING_BLEND           = 0.08;  // thrust vector pull per tick
+const DART_HOMING_RANGE           = 200;   // world units — ~33 atom radii
+const DART_HOMING_BLEND           = 0.10;  // thrust vector pull per tick
 const DART_SPAWN_CLEARANCE        = 4;     // × RADIUS beyond the player ring —
                                            // > REACTION_RANGE (2.5) so the shot
                                            // can never dissolve the firing cell

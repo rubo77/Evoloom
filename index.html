@@ -379,6 +379,13 @@
       display: none;
     }
     #fire-enemy.shown { display: block; }
+    /* Proximity warning — the tick blinks when the nearest enemy is
+       inside ~220 units (bite range is close behind). */
+    #fire-enemy.close { animation: enemy-pulse 0.45s ease-in-out infinite alternate; }
+    @keyframes enemy-pulse {
+      from { opacity: 0.25; }
+      to   { opacity: 1; }
+    }
     /* Lysin bearing — amber dot on the rim pointing at the nearest
        free lysin atom (supply spot or spent dart payload). */
     #fire-lysin {

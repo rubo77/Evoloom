@@ -286,6 +286,21 @@ then re-enter) — invisible to anyone who didn't know it.
 - Verified with `restart-probe.cjs`: passive death → overlay with both
   buttons → Enter → overlay closes, enemy tick returns, new match live.
 
+## Iteration 9 — bite grace
+
+Probe data: first bite ~45 s → dead ~51 s. Once breached, the ring
+couldn't realistically reseal — the worker-side bite rolls kept
+compounding the hole faster than the normal reseal chemistry, so one
+bite was effectively a death sentence.
+
+- `BITE_GRACE_TICKS 240` (~0.5 s): after a successful bite the entire
+  bite pass is skipped for the window. Breaking contact now pays off —
+  the ring gets a real chance to reseal before the next breach lands.
+  Sustained contact still kills through the normal predator chemistry
+  (grace stops the *accelerant*, not the threat).
+- `lastBiteIter` resets on match start and save-load like the other
+  match clocks.
+
 ## Test plan
 
 - Playwright: enter game mode → dispatch fire → assert projectile atoms

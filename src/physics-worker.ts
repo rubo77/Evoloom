@@ -225,6 +225,12 @@ const ENEMY_SEEK_SPEED     = 0.12;  // target drift toward the player (units/ste
 const ENEMY_SEEK_BLEND     = 0.003; // fraction of the velocity gap closed per step
 const BITE_CASES           = 120;
 const THREAT_TICK_MOD      = 10;   // bite-check cadence (iterations)
+// Grace after a successful bite — a breached ring can reseal via normal
+// chemistry if the player breaks contact, but only if the worker-side
+// bite rolls don't keep compounding the hole. Skips the whole bite
+// pass, not just the roll, for the window.
+const BITE_GRACE_TICKS     = 240;  // ~0.5 s at 480 it/s
+let lastBiteIter = -1e9;           // iteration of the last successful bite
 let gameStatus = 0;        // 0 playing, 1 won, 2 lost
 let noEnemyStartIter = -1; // -1 = enemies present; otherwise iteration when they vanished
 let noPlayerStartIter = -1; // same, for the player's loop
@@ -472,8 +478,11 @@ function updateEnemySeek(): void {
 
 // Contact damage — a player membrane atom with a bonded enemy atom in
 // reach rolls a bite that can snap one bond in the ring: the same
-// breach lysin causes, just from cell contact. Fixed cadence.
+// breach lysin causes, just from cell contact. Fixed cadence, and a
+// grace window after each successful bite so breaking contact can pay
+// off before the next breach lands.
 function updateEnemyThreat(): void {
+  if (grid.iterations - lastBiteIter < BITE_GRACE_TICKS) return;
   for (const c of grid.getCells()) {
     if (c.type !== 'a' || !c.playerControlled || c.bonds.size === 0) continue;
     const near = grid.getAllWithinRadius(c.loc.x, c.loc.y, RADIUS * 2.5);
@@ -486,6 +495,7 @@ function updateEnemyThreat(): void {
       if (partner.type === 'a' && Math.random() * BITE_CASES < 1) {
         c.debond(partner);
         partner.state = 0; // freed back to soup, as with lysin
+        lastBiteIter = grid.iterations;
         console.log(`[GAME] enemy bite — membrane breached at (${c.loc.x.toFixed(0)},${c.loc.y.toFixed(0)}) iter ${grid.iterations}`);
         const hit: PlayerHitMsg = { type: 'playerHit' };
         self.postMessage(hit);
@@ -1028,6 +1038,7 @@ function loadSaveState(s: SaveState): string | null {
   lastFireIter = -1e9;
   lastDartCount = 0;
   lysinAmmo = 0;
+  lastBiteIter = -1e9;
   dartClusters.length = 0;
   burning = false;
   burnTarget = 0;
@@ -1300,6 +1311,7 @@ self.onmessage = (e: MessageEvent<unknown>) => {
       lastFireIter = -1e9;
       lastDartCount = 0;
       lysinAmmo = DART_AMMO_START;
+      lastBiteIter = -1e9;
       dartClusters.length = 0;
       setupGame();
       postSnapshotIfPaused();

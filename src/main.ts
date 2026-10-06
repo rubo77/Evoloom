@@ -1011,6 +1011,8 @@ function applyGameModeUI(): void {
   hydroBtn.classList.toggle('active', !gameMode && hydroOn);
   hydroSlidersRow.classList.toggle('shown', !gameMode && hydroOn);
   hydroBtn.disabled = gameMode;
+  // Lysin dart fire pad replaces the top-left legend while a match runs.
+  firePad?.classList.toggle('shown', gameMode);
   hideGameOverlay();
 }
 
@@ -1046,6 +1048,33 @@ function toggleGame(): void {
   armFollowOnSelection = true;
   applyGameModeUI();
   logStatus('Play mode ON — press & hold on the canvas to steer your microbe (WASD works too)');
+}
+
+// ── Lysin dart fire pad ─────────────────────────────────────────────
+// Game-mode replacement for the legend block: the press position vs.
+// the pad's center is the launch direction, so it works identically on
+// mouse and touch. The needle marks the aim; the conic --cd sweep shows
+// reload, drained each frame from the worker's snapshot fields.
+const firePad = document.getElementById('fire-pad') as HTMLElement | null;
+const fireNeedle = document.getElementById('fire-needle') as HTMLElement | null;
+let lastFireCooldownIter = 0; // worker-side reload, mirrored per snapshot
+
+if (firePad) {
+  firePad.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    const r = firePad.getBoundingClientRect();
+    const dx = e.clientX - (r.left + r.width / 2);
+    const dy = e.clientY - (r.top + r.height / 2);
+    const mag = Math.hypot(dx, dy);
+    if (mag < 4) return; // dead center — no direction to launch along
+    // The needle turns to the aim regardless of reload — it doubles as
+    // the last-shot marker. 0deg is straight up, so offset by 90°.
+    const deg = Math.atan2(dy, dx) * 180 / Math.PI + 90;
+    if (fireNeedle) fireNeedle.style.transform = `rotate(${deg}deg)`;
+    if (lastFireCooldownIter > 0) return; // still reloading
+    send({ type: 'fire', x: dx, y: dy });
+    console.log(`[FIRE] dart requested dir(${(dx / mag).toFixed(2)},${(dy / mag).toFixed(2)})`);
+  });
 }
 
 // ── HUD hide/show ─────────────────────────────────────────────────────────
@@ -3218,6 +3247,8 @@ function drawHud(ctx: CanvasRenderingContext2D, snap: SnapshotMsg): void {
       winIters: snap.winCountdownIter,
       loseIters: snap.loseCountdownIter,
       gameStatus: snap.gameStatus,
+      fireIters: snap.fireCooldownIter,
+      dartCount: snap.projectileCount,
     });
   } else {
     drawHUD2D(ctx, snap.iterations, snap.atomCount, snap.atoms);
@@ -3244,6 +3275,10 @@ function loop(): void {
     if (gameMode) {
       if (snap.gameStatus === 1 || snap.gameStatus === 2) showGameOverlay(snap.gameStatus);
       else hideGameOverlay();
+      // Dart reload mirror for the fire pad — updated unconditionally
+      // (drawHud only runs in educational view with the HUD visible).
+      lastFireCooldownIter = snap.fireCooldownIter;
+      firePad?.style.setProperty('--cd', snap.fireCooldownFrac.toFixed(3));
     }
     if (viewMode === 'classic') {
       // Classic mode renders entirely onto the overlay canvas (which always

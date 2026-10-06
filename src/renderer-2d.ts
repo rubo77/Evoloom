@@ -860,6 +860,8 @@ export type GameHudStats = {
   loseIters: number;     // iterations until death (0 while a player loop lives)
   itersPerSec: number;   // current effective iteration rate from the worker
   gameStatus: number;    // 0 playing, 1 won, 2 lost
+  fireIters: number;     // iterations until the lysin dart can fire (0 = ready)
+  dartCount: number;     // dart atoms still under thrust
 };
 
 const HUD_GOOD = '#5edca0';
@@ -902,22 +904,32 @@ export function drawGameHUD2D(ctx: CanvasRenderingContext2D, atoms: Float32Array
     status = `victory in ${(stats.winIters / Math.max(1, stats.itersPerSec)).toFixed(1)}s`;
     statusColor = HUD_GOOD;
   }
+  // Lysin dart state — reload countdown plus atoms still mid-flight.
+  const dartText = stats.fireIters > 0
+    ? `dart: ${(stats.fireIters / Math.max(1, stats.itersPerSec)).toFixed(1)}s`
+    : 'dart: READY';
+  const line4 = stats.dartCount > 0 ? `${dartText} · ${stats.dartCount} out` : dartText;
+  const dartColor = stats.fireIters > 0 ? HUD_WARN : HUD_GOOD;
   const textX = hudTextX(ctx);
   const textW = Math.max(
     ctx.measureText(line1).width,
     ctx.measureText(line2).width,
     ctx.measureText(line3).width,
+    ctx.measureText(line4).width,
     ctx.measureText(status).width);
-  drawHudBox(ctx, textX, textW, 74);
+  drawHudBox(ctx, textX, textW, 90);
   const ty = HUD_STATS_RECT.y + 16;
   ctx.fillStyle = '#ffffff';
   ctx.fillText(line1, textX, ty);
   ctx.fillText(line2, textX, ty + 16);
   ctx.fillStyle = membraneColor;
   ctx.fillText(line3, textX, ty + 32);
+  ctx.fillStyle = dartColor;
+  ctx.fillText(line4, textX, ty + 48);
   ctx.fillStyle = statusColor;
-  ctx.fillText(status, textX, ty + 48);
-  drawHudLegend(ctx);
+  ctx.fillText(status, textX, ty + 64);
+  // The sandbox legend is replaced in game mode by the fire pad
+  // (#fire-pad DOM element), so no drawHudLegend() call here.
   ctx.restore();
 }
 

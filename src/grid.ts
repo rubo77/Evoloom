@@ -505,6 +505,14 @@ export class Grid {
         cell.vel.x += (dxRaw / m) * this.PLAYER_KICK * dryFactor;
         cell.vel.y += (dyRaw / m) * this.PLAYER_KICK * dryFactor;
       }
+
+      // Projectile thrust — game-mode lysin darts. Constant-direction
+      // kick while fuel lasts; bonded cluster members move coherently,
+      // MAX_VELOCITY still caps the speed like everything else.
+      if (cell.thrustUntilIter > this._iterations) {
+        cell.vel.x += cell.thrustX;
+        cell.vel.y += cell.thrustY;
+      }
     }
   }
 }

@@ -17,6 +17,12 @@ export class Cell {
   wasFree = false; // true if this atom was also free the previous step
   energy = 1.0; // wild-mode metabolism — ignored when grid.energyEnabled is false
   playerControlled = false; // true → WASD bias force applies to this atom each step
+  // Game-mode projectile propulsion — lysin darts fired by the player.
+  // While thrustUntilIter > grid.iterations the atom gets a constant
+  // direction kick each step; afterwards it drifts as ordinary soup.
+  thrustX = 0;
+  thrustY = 0;
+  thrustUntilIter = 0;
   // Hydrolysis exemption: epoch-stamped "is this cell live as of tick X?"
   // The hydrolysis BFS sets liveCheckedAt = currentIter for every atom in
   // a live cell graph. Protection check is `cell.liveCheckedAt === iter`.

@@ -20,6 +20,7 @@ declare const performance: { now(): number };
 import { Grid } from './grid';
 import { Cell } from './cell';
 import { initSimple, buildCell, seedLysin, removeLysin, seedPredatorCells, removePredatorCells, seedSoup, Q } from './init';
+import { spawnDart, updateDarts, FIRE_COOLDOWN_TICKS } from './dart';
 import { initWild, generateRandomChemistry, wildTick } from './wild';
 import {
   ControlMsg, SnapshotMsg, BurnProgressMsg, BurnDoneMsg,
@@ -209,6 +210,8 @@ const LYSIN_PER_SPOT          = 35;
 const WIN_NO_ENEMY_TICKS      = 2400;  // ~5 sec at default 480 steps/sec
 const LOSE_NO_PLAYER_TICKS    = 480;   // ~1 sec grace — a transient frame with no
                                        // closed player loop is not a death
+// Lysin dart — the game-mode projectile fired from the fire pad
+// (spawn + lifecycle live in dart.ts, shared with dev/dart-sim.ts).
 let gameStatus = 0;        // 0 playing, 1 won, 2 lost
 let noEnemyStartIter = -1; // -1 = enemies present; otherwise iteration when they vanished
 let noPlayerStartIter = -1; // same, for the player's loop
@@ -217,6 +220,11 @@ let savedSandboxNoise = false;
 let savedSandboxHydro = false;
 let lastLoopCounts = { player: 0, enemy: 0 };
 let lastPlayerMembraneFrac = 0; // sealed share of player 'a' atoms, 0..1
+let lastFireIter = -1e9;      // iteration of the last fired dart (far past = ready)
+let lastDartCount = 0;        // dart atoms still under thrust in the last snapshot
+// Live dart clusters — the bonded lysin atoms of each shot in flight.
+// Emptied on world rebuilds and when a cluster detonates or burns out.
+const dartClusters: Cell[][] = [];
 
 // Buffer pool — three quintuplets so we never starve while one is rendered and
 // one is in transit. Main returns each used set via a 'reuse' message.
@@ -344,6 +352,41 @@ function setupGame(): void {
     }
   }
   applyCustomChemistryToCurrentGrid();
+}
+
+// Fire a lysin dart — the game-mode projectile. A bonded cluster of 'p'
+// atoms gets a constant-direction thrust for a short burn, then drifts
+// as loose armed lysin. The cluster spawns just OUTSIDE the player's
+// membrane ring (spawn clearance > REACTION_RANGE) so the payload can
+// never dissolve the cell that fired it; steering back into your own
+// shot afterwards is a genuine, fair risk.
+function fireDart(dx: number, dy: number): void {
+  const mag = Math.hypot(dx, dy);
+  if (mag < 0.001) return;
+  if (!inGame || gameStatus !== 0) return;
+  if (grid.iterations - lastFireIter < FIRE_COOLDOWN_TICKS) {
+    console.log(`[WEAPON] fire rejected — ${FIRE_COOLDOWN_TICKS - (grid.iterations - lastFireIter)} iter cooldown left`);
+    return;
+  }
+  const ux = dx / mag, uy = dy / mag;
+  // Player centroid + outer reach over the controlled atoms.
+  let cx = 0, cy = 0, cnt = 0;
+  for (const c of grid.getCells()) {
+    if (!c.playerControlled) continue;
+    cx += c.loc.x; cy += c.loc.y; cnt++;
+  }
+  if (cnt === 0) { console.log('[WEAPON] fire rejected — no player atoms'); return; }
+  cx /= cnt; cy /= cnt;
+  let maxR = 0;
+  for (const c of grid.getCells()) {
+    if (!c.playerControlled) continue;
+    const d = Math.hypot(c.loc.x - cx, c.loc.y - cy);
+    if (d > maxR) maxR = d;
+  }
+  const { cluster, x: px, y: py } = spawnDart(grid, cx, cy, maxR, ux, uy, grid.iterations);
+  lastFireIter = grid.iterations;
+  dartClusters.push(cluster);
+  console.log(`[WEAPON] dart fired dir(${ux.toFixed(2)},${uy.toFixed(2)}) at (${px.toFixed(0)},${py.toFixed(0)}) — ${cluster.length} lysin atoms`);
 }
 
 function setupRigged(): void {
@@ -548,6 +591,7 @@ function packSnapshot(atomsBuf: Float32Array, atomIdsBuf: Uint32Array, loopsBuf:
   const indexMap = new Map<Cell, number>();
   for (let i = 0; i < n; i++) indexMap.set(cells[i], i);
 
+  let dartAtoms = 0;
   for (let i = 0; i < n; i++) {
     const c = cells[i];
     const o = i * STRIDE;
@@ -564,7 +608,9 @@ function packSnapshot(atomsBuf: Float32Array, atomIdsBuf: Uint32Array, loopsBuf:
     if (selectedSet.has(c)) flags |= 16; // bit 4 = selected, drives the halo on the main thread
     atomsBuf[o + 3] = flags;
     atomIdsBuf[i] = c.id >>> 0;
+    if (c.thrustUntilIter > grid.iterations) dartAtoms++;
   }
+  lastDartCount = dartAtoms;
   // Zero unused tail so main can't see stale IDs from a prior snapshot.
   if (n < atomIdsBuf.length) atomIdsBuf.fill(0, n);
 
@@ -633,6 +679,10 @@ function postSnapshot(): void {
   const loseCountdown = (inGame && noPlayerStartIter >= 0)
     ? Math.max(0, LOSE_NO_PLAYER_TICKS - (grid.iterations - noPlayerStartIter))
     : 0;
+  // Lysin dart reload state + in-flight atom count for the fire pad/HUD.
+  const fireCooldown = inGame
+    ? Math.max(0, FIRE_COOLDOWN_TICKS - (grid.iterations - lastFireIter))
+    : 0;
   const msg: SnapshotMsg = {
     type: 'snapshot',
     iterations: grid.iterations,
@@ -654,6 +704,9 @@ function postSnapshot(): void {
     // between ~60 × 1 × 0.05 and 60 × MAX_SPF × 1, so the HUD converts
     // the iteration countdowns with this value, not a fixed constant.
     itersPerSec: TARGET_HZ * stepsPerFrame * simRate,
+    fireCooldownIter: fireCooldown,
+    fireCooldownFrac: fireCooldown / FIRE_COOLDOWN_TICKS,
+    projectileCount: lastDartCount,
   };
   self.postMessage(msg, [
     atoms.buffer as Transferable,
@@ -817,6 +870,9 @@ function loadSaveState(s: SaveState): string | null {
   gameStatus = 0;
   noEnemyStartIter = -1;
   noPlayerStartIter = -1;
+  lastFireIter = -1e9;
+  lastDartCount = 0;
+  dartClusters.length = 0;
   burning = false;
   burnTarget = 0;
   selectedSet.clear();
@@ -905,6 +961,10 @@ async function burnLoop(): Promise<void> {
 function runOneStep(): void {
   grid.step();
   if (mode === 'wild') wildTick(grid);
+  if (inGame && dartClusters.length > 0) {
+    const hit = updateDarts(grid, dartClusters, grid.iterations);
+    if (hit) console.log(`[WEAPON] dart detonated at (${hit.loc.x.toFixed(0)},${hit.loc.y.toFixed(0)}) iter ${grid.iterations}`);
+  }
   if (grid.iterations > 0) {
     if (inGame && gameStatus === 0) {
       if (grid.iterations % SOUP_RESPAWN_INTERVAL  === 0) spawnRandomSoupPatches();
@@ -1072,6 +1132,9 @@ self.onmessage = (e: MessageEvent<unknown>) => {
       gameStatus = 0;
       noEnemyStartIter = -1;
       noPlayerStartIter = -1;
+      lastFireIter = -1e9;
+      lastDartCount = 0;
+      dartClusters.length = 0;
       setupGame();
       postSnapshotIfPaused();
       return;
@@ -1080,6 +1143,7 @@ self.onmessage = (e: MessageEvent<unknown>) => {
       gameStatus = 0;
       noEnemyStartIter = -1;
       noPlayerStartIter = -1;
+      dartClusters.length = 0;
       setupRigged();
       noise.enabled = savedSandboxNoise;
       hydrolysis.enabled = savedSandboxHydro;
@@ -1088,6 +1152,9 @@ self.onmessage = (e: MessageEvent<unknown>) => {
     case 'setPlayerInput':
       grid.playerInputX = msg.x;
       grid.playerInputY = msg.y;
+      return;
+    case 'fire':
+      fireDart(msg.x, msg.y);
       return;
     case 'setDripFeed':
       dripFeed = msg.on;

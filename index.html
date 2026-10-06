@@ -171,7 +171,10 @@
       position: relative;
       display: inline-block;
       line-height: 0;
-      overflow: hidden;
+      /* overflow:clip forbids scrolling entirely — scroll containers
+         auto-scroll focused descendants into view, which would drag the
+         canvas view sideways whenever a control-panel button is pressed */
+      overflow: clip;
       box-shadow:
         0 0 0 1px var(--border-subtle),
         0 20px 60px -20px rgba(212, 166, 79, 0.10),
@@ -312,6 +315,61 @@
       transition: opacity 0.4s var(--ease);
     }
     .scope-frame.microscope::after { opacity: 1; }
+
+    /* Lysin dart fire pad — game-mode replacement for the legend block.
+       Press position relative to the center is the launch direction;
+       the needle marks the aim and the conic sweep shows reload. */
+    #fire-pad {
+      position: absolute;
+      top: 106px;         /* below the game stats box on the overlay canvas */
+      left: 10px;
+      width: 88px;
+      height: 88px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.55);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      z-index: 12;
+      display: none;
+      touch-action: none; /* pad presses must never scroll the page */
+      cursor: crosshair;
+    }
+    #fire-pad.shown { display: block; }
+    /* Cooldown sweep — a conic wedge draining as the dart reloads.
+       --cd holds the remaining fraction 0..1, set from the render loop. */
+    #fire-pad::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background: conic-gradient(rgba(212, 166, 79, 0.5) calc(var(--cd, 0) * 1turn), transparent 0);
+      pointer-events: none;
+    }
+    /* Compass needle — bottom tip pinned to the pad center, rotated to
+       the last fired/aimed direction (0deg = straight up). */
+    #fire-needle {
+      position: absolute;
+      left: calc(50% - 2px);
+      top: calc(50% - 30px);
+      width: 4px;
+      height: 30px;
+      transform-origin: 50% 100%;
+      transform: rotate(0deg);
+      background: linear-gradient(to top, transparent, var(--c-primary, #d4a64f));
+      border-radius: 2px;
+      pointer-events: none;
+    }
+    #fire-pad::after {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 7px;
+      height: 7px;
+      margin: -3.5px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.75);
+      pointer-events: none;
+    }
 
     /* ── Game overlay ──────────────────────────────────────────────────── */
     #game-overlay {
@@ -1621,6 +1679,7 @@
       <button id="tutorial-btn" class="canvas-tool-btn" aria-label="Interactive tutorial" title="Interactive tutorial" data-help="Start the guided interactive tutorial">?</button>
     </div>
     <button id="hud-toggle" class="canvas-tool-btn hud-toggle" aria-label="Toggle stats overlay" title="Hide / show stats overlay" data-help="Hide / show the stats &amp; legend overlay">‹</button>
+    <div id="fire-pad" role="button" aria-label="Fire lysin dart" title="Lysin dart — press toward a direction to fire"><div id="fire-needle"></div></div>
     <div id="game-overlay">
       <div id="game-overlay-title"></div>
       <div id="game-overlay-sub"></div>

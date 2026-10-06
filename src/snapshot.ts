@@ -37,6 +37,9 @@ export type SnapshotMsg = {
   loseCountdownIter: number; // iterations remaining before death is declared (0 while a live player loop exists)
   playerMembraneFrac: number; // share of player 'a' atoms sealed in a closed loop (1 = intact, drops on breach)
   itersPerSec: number;        // current effective iterations/s (varies with adaptive pacing and the speed slider)
+  fireCooldownIter: number;   // iterations until the lysin dart can fire again (0 = ready)
+  fireCooldownFrac: number;   // 0..1 fraction of cooldown remaining (1 = just fired)
+  projectileCount: number;    // dart atoms still under thrust this snapshot
 };
 
 export type ControlMsg =
@@ -57,6 +60,7 @@ export type ControlMsg =
   | { type: 'startGame' }
   | { type: 'endGame' }
   | { type: 'setPlayerInput'; x: number; y: number }
+  | { type: 'fire'; x: number; y: number }
   | { type: 'setDripFeed'; on: boolean; soupInterval: number; waterInterval: number }
   | { type: 'burn'; targetIters: number }
   | { type: 'abortBurn' }

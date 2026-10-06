@@ -27,7 +27,7 @@ import {
   SaveState, SaveStateMsg, LoadResultMsg, EventLogChunkMsg, STRIDE,
   packTypeState, allocAtomsBuffer, allocAtomIdsBuffer, allocLoopsBuffer, allocBondsBuffer, allocDropletsBuffer,
   MAX_ATOMS, MAX_LOOP_VERTS_TOTAL, MAX_BONDS, MAX_DROPLETS,
-  CustomAtomDef, CustomRuleSpec, DART_AMMO_START, FireRejectedMsg,
+  CustomAtomDef, CustomRuleSpec, DART_AMMO_START, FireRejectedMsg, PlayerHitMsg, DartHitMsg,
 } from './snapshot';
 import { r2, r3 } from './reaction';
 import { NoiseConfig, EventLog, DEFAULT_NOISE } from './noise';
@@ -469,6 +469,8 @@ function updateEnemyThreat(): void {
         c.debond(partner);
         partner.state = 0; // freed back to soup, as with lysin
         console.log(`[GAME] enemy bite — membrane breached at (${c.loc.x.toFixed(0)},${c.loc.y.toFixed(0)}) iter ${grid.iterations}`);
+        const hit: PlayerHitMsg = { type: 'playerHit' };
+        self.postMessage(hit);
         break;
       }
     }
@@ -1053,7 +1055,11 @@ function runOneStep(): void {
   if (mode === 'wild') wildTick(grid);
   if (inGame && dartClusters.length > 0) {
     const hit = updateDarts(grid, dartClusters, grid.iterations);
-    if (hit) console.log(`[WEAPON] dart detonated at (${hit.loc.x.toFixed(0)},${hit.loc.y.toFixed(0)}) iter ${grid.iterations}`);
+    if (hit) {
+      console.log(`[WEAPON] dart detonated at (${hit.loc.x.toFixed(0)},${hit.loc.y.toFixed(0)}) iter ${grid.iterations}`);
+      const msg: DartHitMsg = { type: 'dartHit' };
+      self.postMessage(msg);
+    }
   }
   if (inGame && gameStatus === 0) {
     if (grid.iterations % 5 === 0) collectLysinAmmo();

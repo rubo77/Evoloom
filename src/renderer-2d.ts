@@ -878,6 +878,7 @@ export type GameHudStats = {
   fireIters: number;     // iterations until the lysin dart can fire (0 = ready)
   dartCount: number;     // dart atoms still under thrust
   ammo: number;          // lysin atoms banked for darts (5 per shot)
+  damageFlash: number;   // 0..1 — intensity of the just-bitten screen flash
 };
 
 const HUD_GOOD = '#5edca0';
@@ -946,6 +947,15 @@ export function drawGameHUD2D(ctx: CanvasRenderingContext2D, atoms: Float32Array
   ctx.fillText(line4, textX, ty + 48);
   ctx.fillStyle = statusColor;
   ctx.fillText(status, textX, ty + 64);
+  // Damage flash — a decaying red vignette on every enemy bite.
+  if (stats.damageFlash > 0) {
+    const w = ctx.canvas.width, h = ctx.canvas.height;
+    const g = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.35, w / 2, h / 2, Math.max(w, h) * 0.75);
+    g.addColorStop(0, 'rgba(255,60,60,0)');
+    g.addColorStop(1, `rgba(255,60,60,${(0.45 * stats.damageFlash).toFixed(3)})`);
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, w, h);
+  }
   // The sandbox legend is replaced in game mode by the fire pad
   // (#fire-pad DOM element), so no drawHudLegend() call here.
   ctx.restore();

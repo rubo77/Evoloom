@@ -236,6 +236,11 @@ export type FireRejectedMsg = {
   reason: 'ammo' | 'cooldown';
 };
 
+// One-shot game events the HUD should react to — enemy bites that
+// breached the player's membrane and dart detonations on a target.
+export type PlayerHitMsg = { type: 'playerHit' };
+export type DartHitMsg   = { type: 'dartHit' };
+
 // Chunk of noise events drained from the worker's ring buffer. Six
 // parallel Uint32Arrays keep wire format compact and transferable.
 // kinds: 0=copy_misfire, 1=decay, 2=bond_fail, 3=rule_flip(reserved).

@@ -187,6 +187,20 @@ exit) · tutorial.spec.js still green · tsc + build + 14/14 smoke tests.
 - Kill feed assert moved off the status text (transient, overwritten
   by other feeds) onto the deterministic worker log line.
 
+## Iteration 4 — damage and hit feedback
+
+- **`playerHit` message:** every successful enemy bite posts to the
+  main thread, which drives a decaying red vignette
+  (`damageFlash` 1→0 over ~400 ms, drawn fullscreen inside
+  `drawGameHUD2D`) and a throttled `⚠ membrane breached — break
+  contact!` status (max once per 2 s — bites arrive in bursts during
+  a sustained hug).
+- **`dartHit` message:** a dart detonation on enemy membrane posts
+  `☄ direct hit — lysin cloud released` — before this, a shot that
+  hit but didn't kill gave the player no confirmation at all.
+- Verified: tsc, build, fire-pad spec green, 14/14 smoke tests,
+  mobile-build BUILD SUCCESSFUL.
+
 ## Test plan
 
 - Playwright: enter game mode → dispatch fire → assert projectile atoms

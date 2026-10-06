@@ -19,7 +19,7 @@
 // always shows the version that was actually bundled.
 declare const APP_VERSION: string;
 
-import { ControlMsg, SnapshotMsg, BurnProgressMsg, BurnDoneMsg, SaveStateMsg, LoadResultMsg, EventLogChunkMsg, SelectionExportMsg, FireRejectedMsg, SelectionState, CustomAtomDef, CustomRuleSpec, SaveState, STRIDE } from './snapshot';
+import { ControlMsg, SnapshotMsg, BurnProgressMsg, BurnDoneMsg, SaveStateMsg, LoadResultMsg, EventLogChunkMsg, SelectionExportMsg, FireRejectedMsg, PlayerHitMsg, DartHitMsg, SelectionState, CustomAtomDef, CustomRuleSpec, SaveState, STRIDE } from './snapshot';
 import { setCustomAtomColor as setGPUCustomColor } from './renderer-gpu';
 import { setClassicAtomColor, setEducationalAtomColor } from './renderer-2d';
 import { draw2D, draw2DClassic, drawHUD2D, drawGameHUD2D, drawArenaBorder, HUD_STATS_RECT } from './renderer-2d';
@@ -563,7 +563,7 @@ function sendTransfer(msg: ControlMsg, transferables: Transferable[]): void {
 // caused a deadlock when the worker only had 2 buffers in its pool).
 let lastSnapshot: SnapshotMsg | null = null;
 
-type WorkerMsg = SnapshotMsg | BurnProgressMsg | BurnDoneMsg | SaveStateMsg | LoadResultMsg | EventLogChunkMsg | SelectionExportMsg | FireRejectedMsg;
+type WorkerMsg = SnapshotMsg | BurnProgressMsg | BurnDoneMsg | SaveStateMsg | LoadResultMsg | EventLogChunkMsg | SelectionExportMsg | FireRejectedMsg | PlayerHitMsg | DartHitMsg;
 
 worker.onmessage = (e: MessageEvent<WorkerMsg>) => {
   const data = e.data;
@@ -589,6 +589,20 @@ worker.onmessage = (e: MessageEvent<WorkerMsg>) => {
     // cooldown or magazine can let a press through that still needs
     // a visible explanation.
     logStatus(data.reason === 'cooldown' ? 'Reloading…' : 'Out of lysin — fly through orange p-atoms to rearm');
+    return;
+  }
+  if (data.type === 'playerHit') {
+    lastBiteAt = performance.now();
+    // Bites can land in bursts during a sustained hug — the red flash
+    // fires every time, the status line only every couple of seconds.
+    if (performance.now() - lastBiteStatusAt > 2000) {
+      lastBiteStatusAt = performance.now();
+      logStatus('⚠ membrane breached — break contact!');
+    }
+    return;
+  }
+  if (data.type === 'dartHit') {
+    logStatus('☄ direct hit — lysin cloud released');
     return;
   }
 };
@@ -1066,6 +1080,8 @@ const firePad = document.getElementById('fire-pad') as HTMLElement | null;
 const fireNeedle = document.getElementById('fire-needle') as HTMLElement | null;
 let lastFireCooldownIter = 0; // worker-side reload, mirrored per snapshot
 let minEnemyCount = -1; // lowest enemy loop count seen this match (-1 outside a match)
+let lastBiteAt = -1e9;        // performance.now() of the last enemy bite (drives the damage flash)
+let lastBiteStatusAt = -1e9;  // throttles the 'membrane breached' status text
 
 if (firePad) {
   firePad.addEventListener('pointerdown', (e) => {
@@ -3261,6 +3277,7 @@ function drawHud(ctx: CanvasRenderingContext2D, snap: SnapshotMsg): void {
       fireIters: snap.fireCooldownIter,
       dartCount: snap.projectileCount,
       ammo: snap.lysinAmmo,
+      damageFlash: Math.max(0, 1 - (performance.now() - lastBiteAt) / 400),
     });
   } else {
     drawHUD2D(ctx, snap.iterations, snap.atomCount, snap.atoms);

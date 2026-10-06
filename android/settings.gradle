@@ -1,3 +1,8 @@
+// Android Studio titles the project window from the Gradle root project
+// name; without it the IDE falls back to .idea/.name (which sync may
+// regenerate) or the bare "android" directory name.
+rootProject.name = 'Evoloom'
+
 include ':app'
 include ':capacitor-cordova-android-plugins'
 project(':capacitor-cordova-android-plugins').projectDir = new File('./capacitor-cordova-android-plugins/')

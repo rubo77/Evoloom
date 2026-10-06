@@ -345,3 +345,7 @@ The headings can all always sit above their block, and "Version Evoloom
 
 ## 26-10-05 12:15
 The contact address must be evoloom-support@it.z11.de.
+
+## 26-10-05 12:30
+Something deleted .idea/.name again — what could it have been this
+time? It must not be deleted.

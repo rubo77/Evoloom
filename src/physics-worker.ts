@@ -18,16 +18,16 @@ declare function setTimeout(handler: () => void, ms: number): number;
 declare const performance: { now(): number };
 
 import { Grid } from './grid';
-import { Cell } from './cell';
+import { Cell, RADIUS } from './cell';
 import { initSimple, buildCell, seedLysin, removeLysin, seedPredatorCells, removePredatorCells, seedSoup, Q } from './init';
-import { spawnDart, updateDarts, FIRE_COOLDOWN_TICKS } from './dart';
+import { spawnDart, updateDarts, FIRE_COOLDOWN_TICKS, DART_ATOMS } from './dart';
 import { initWild, generateRandomChemistry, wildTick } from './wild';
 import {
   ControlMsg, SnapshotMsg, BurnProgressMsg, BurnDoneMsg,
   SaveState, SaveStateMsg, LoadResultMsg, EventLogChunkMsg, STRIDE,
   packTypeState, allocAtomsBuffer, allocAtomIdsBuffer, allocLoopsBuffer, allocBondsBuffer, allocDropletsBuffer,
   MAX_ATOMS, MAX_LOOP_VERTS_TOTAL, MAX_BONDS, MAX_DROPLETS,
-  CustomAtomDef, CustomRuleSpec,
+  CustomAtomDef, CustomRuleSpec, DART_AMMO_START, FireRejectedMsg,
 } from './snapshot';
 import { r2, r3 } from './reaction';
 import { NoiseConfig, EventLog, DEFAULT_NOISE } from './noise';
@@ -212,6 +212,16 @@ const LOSE_NO_PLAYER_TICKS    = 480;   // ~1 sec grace — a transient frame wit
                                        // closed player loop is not a death
 // Lysin dart — the game-mode projectile fired from the fire pad
 // (spawn + lifecycle live in dart.ts, shared with dev/dart-sim.ts).
+const DART_AMMO_MAX        = 50;   // magazine cap — 10 darts
+const AMMO_PICKUP_RANGE    = RADIUS * 2.2;
+// Enemy pressure — membranes within seek range drift toward the player
+// and grind its ring on contact. The kick stays well below the steering
+// bias so the player can always outrun a pursuer; bites are rare per
+// contact tick but a sustained hug is lethal.
+const ENEMY_SEEK_RANGE     = 700;
+const ENEMY_SEEK_KICK      = 0.004;
+const BITE_CASES           = 120;
+const THREAT_TICK_MOD      = 10;   // threat pass cadence (iterations)
 let gameStatus = 0;        // 0 playing, 1 won, 2 lost
 let noEnemyStartIter = -1; // -1 = enemies present; otherwise iteration when they vanished
 let noPlayerStartIter = -1; // same, for the player's loop
@@ -222,6 +232,7 @@ let lastLoopCounts = { player: 0, enemy: 0 };
 let lastPlayerMembraneFrac = 0; // sealed share of player 'a' atoms, 0..1
 let lastFireIter = -1e9;      // iteration of the last fired dart (far past = ready)
 let lastDartCount = 0;        // dart atoms still under thrust in the last snapshot
+let lysinAmmo = 0;            // lysin atoms available for darts (5 per shot)
 // Live dart clusters — the bonded lysin atoms of each shot in flight.
 // Emptied on world rebuilds and when a cluster detonates or burns out.
 const dartClusters: Cell[][] = [];
@@ -366,6 +377,14 @@ function fireDart(dx: number, dy: number): void {
   if (!inGame || gameStatus !== 0) return;
   if (grid.iterations - lastFireIter < FIRE_COOLDOWN_TICKS) {
     console.log(`[WEAPON] fire rejected — ${FIRE_COOLDOWN_TICKS - (grid.iterations - lastFireIter)} iter cooldown left`);
+    const reject: FireRejectedMsg = { type: 'fireRejected', reason: 'cooldown' };
+    self.postMessage(reject);
+    return;
+  }
+  if (lysinAmmo < DART_ATOMS) {
+    console.log(`[WEAPON] fire rejected — out of lysin (${lysinAmmo} atoms, need ${DART_ATOMS}; fly through orange p-atoms to rearm)`);
+    const reject: FireRejectedMsg = { type: 'fireRejected', reason: 'ammo' };
+    self.postMessage(reject);
     return;
   }
   const ux = dx / mag, uy = dy / mag;
@@ -385,8 +404,75 @@ function fireDart(dx: number, dy: number): void {
   }
   const { cluster, x: px, y: py } = spawnDart(grid, cx, cy, maxR, ux, uy, grid.iterations);
   lastFireIter = grid.iterations;
+  lysinAmmo -= DART_ATOMS;
   dartClusters.push(cluster);
-  console.log(`[WEAPON] dart fired dir(${ux.toFixed(2)},${uy.toFixed(2)}) at (${px.toFixed(0)},${py.toFixed(0)}) — ${cluster.length} lysin atoms`);
+  console.log(`[WEAPON] dart fired dir(${ux.toFixed(2)},${uy.toFixed(2)}) at (${px.toFixed(0)},${py.toFixed(0)}) — ${cluster.length} lysin atoms, ammo ${lysinAmmo}`);
+}
+
+// Lysin pickup — free 'p' atoms touching the player's cell are absorbed
+// into the dart magazine. Armed dart atoms in flight are excluded;
+// spent/loose lysin (including a missed shot's payload) is collectable.
+// Ambient lysin still dissolves membrane on contact, so scooping a spot
+// is a genuine risk/reward trade rather than a free rearm.
+function collectLysinAmmo(): void {
+  if (lysinAmmo >= DART_AMMO_MAX) return;
+  const picked = new Set<Cell>();
+  for (const c of grid.getCells()) {
+    if (!c.playerControlled) continue;
+    for (const n of grid.getAllWithinRadius(c.loc.x, c.loc.y, AMMO_PICKUP_RANGE)) {
+      if (n.type === 'p' && n.bonds.size === 0 && n.thrustUntilIter <= grid.iterations) {
+        picked.add(n);
+      }
+    }
+  }
+  for (const n of picked) {
+    if (lysinAmmo >= DART_AMMO_MAX) break;
+    grid.removeCell(n);
+    lysinAmmo++;
+  }
+  if (picked.size > 0) {
+    console.log(`[WEAPON] lysin collected — +${picked.size} atoms, ammo ${lysinAmmo}`);
+  }
+}
+
+// Enemy pressure — enemy membrane atoms within seek range get a weak
+// per-tick velocity pull toward the player centroid, so cells slowly
+// converge instead of waiting to be hunted. On contact, a bite roll can
+// snap one bond in the player's ring — the same membrane breach lysin
+// causes, just from cell contact. Both run on a fixed cadence.
+function updateEnemyThreat(): void {
+  let cx = 0, cy = 0, cnt = 0;
+  for (const c of grid.getCells()) {
+    if (!c.playerControlled) continue;
+    cx += c.loc.x; cy += c.loc.y; cnt++;
+  }
+  if (cnt === 0) return;
+  cx /= cnt; cy /= cnt;
+  for (const c of grid.getCells()) {
+    if (c.type !== 'a' || c.playerControlled || c.bonds.size === 0) continue;
+    const dx = cx - c.loc.x, dy = cy - c.loc.y;
+    const d = Math.hypot(dx, dy);
+    if (d > ENEMY_SEEK_RANGE || d < 1) continue;
+    c.vel.x += (dx / d) * ENEMY_SEEK_KICK;
+    c.vel.y += (dy / d) * ENEMY_SEEK_KICK;
+  }
+  for (const c of grid.getCells()) {
+    if (c.type !== 'a' || !c.playerControlled || c.bonds.size === 0) continue;
+    const near = grid.getAllWithinRadius(c.loc.x, c.loc.y, RADIUS * 2.5);
+    let enemyNear = false;
+    for (const n of near) {
+      if (n.type === 'a' && !n.playerControlled && n.bonds.size > 0) { enemyNear = true; break; }
+    }
+    if (!enemyNear) continue;
+    for (const partner of c.bonds) {
+      if (partner.type === 'a' && Math.random() * BITE_CASES < 1) {
+        c.debond(partner);
+        partner.state = 0; // freed back to soup, as with lysin
+        console.log(`[GAME] enemy bite — membrane breached at (${c.loc.x.toFixed(0)},${c.loc.y.toFixed(0)}) iter ${grid.iterations}`);
+        break;
+      }
+    }
+  }
 }
 
 function setupRigged(): void {
@@ -709,6 +795,7 @@ function postSnapshot(): void {
     fireCooldownIter: fireCooldown,
     fireCooldownFrac: fireCooldown / FIRE_COOLDOWN_TICKS,
     projectileCount: lastDartCount,
+    lysinAmmo,
   };
   self.postMessage(msg, [
     atoms.buffer as Transferable,
@@ -874,6 +961,7 @@ function loadSaveState(s: SaveState): string | null {
   noPlayerStartIter = -1;
   lastFireIter = -1e9;
   lastDartCount = 0;
+  lysinAmmo = 0;
   dartClusters.length = 0;
   burning = false;
   burnTarget = 0;
@@ -966,6 +1054,10 @@ function runOneStep(): void {
   if (inGame && dartClusters.length > 0) {
     const hit = updateDarts(grid, dartClusters, grid.iterations);
     if (hit) console.log(`[WEAPON] dart detonated at (${hit.loc.x.toFixed(0)},${hit.loc.y.toFixed(0)}) iter ${grid.iterations}`);
+  }
+  if (inGame && gameStatus === 0) {
+    if (grid.iterations % 5 === 0) collectLysinAmmo();
+    if (grid.iterations % THREAT_TICK_MOD === 0) updateEnemyThreat();
   }
   if (grid.iterations > 0) {
     if (inGame && gameStatus === 0) {
@@ -1136,6 +1228,7 @@ self.onmessage = (e: MessageEvent<unknown>) => {
       noPlayerStartIter = -1;
       lastFireIter = -1e9;
       lastDartCount = 0;
+      lysinAmmo = DART_AMMO_START;
       dartClusters.length = 0;
       setupGame();
       postSnapshotIfPaused();

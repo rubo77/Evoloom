@@ -42,7 +42,12 @@ export type SnapshotMsg = {
   fireCooldownIter: number;   // iterations until the lysin dart can fire again (0 = ready)
   fireCooldownFrac: number;   // 0..1 fraction of cooldown remaining (1 = just fired)
   projectileCount: number;    // dart atoms still under thrust this snapshot
+  lysinAmmo: number;          // lysin atoms banked for darts (DART_ATOMS per shot)
 };
+
+// Lysin atoms banked at match start — shared by the worker (authoritative
+// magazine) and the main thread (seed value for the mirrored count).
+export const DART_AMMO_START = 15;
 
 export type ControlMsg =
   | { type: 'init'; gridW: number; gridH: number; mode: 'rigged' | 'wild' }
@@ -221,6 +226,14 @@ export type BurnDoneMsg = {
   type: 'burnDone';
   iterations: number;
   aborted: boolean;
+};
+
+// Posted when a 'fire' control message is rejected — the UI can explain
+// why (a mirrored cooldown can lag a frame, so rejects need a channel
+// back rather than a client-side gate alone).
+export type FireRejectedMsg = {
+  type: 'fireRejected';
+  reason: 'ammo' | 'cooldown';
 };
 
 // Chunk of noise events drained from the worker's ring buffer. Six

@@ -877,6 +877,7 @@ export type GameHudStats = {
   gameStatus: number;    // 0 playing, 1 won, 2 lost
   fireIters: number;     // iterations until the lysin dart can fire (0 = ready)
   dartCount: number;     // dart atoms still under thrust
+  ammo: number;          // lysin atoms banked for darts (5 per shot)
 };
 
 const HUD_GOOD = '#5edca0';
@@ -919,12 +920,14 @@ export function drawGameHUD2D(ctx: CanvasRenderingContext2D, atoms: Float32Array
     status = `victory in ${(stats.winIters / Math.max(1, stats.itersPerSec)).toFixed(1)}s`;
     statusColor = HUD_GOOD;
   }
-  // Lysin dart state — reload countdown plus atoms still mid-flight.
-  const dartText = stats.fireIters > 0
-    ? `dart: ${(stats.fireIters / Math.max(1, stats.itersPerSec)).toFixed(1)}s`
-    : 'dart: READY';
+  // Lysin dart state — reload countdown, magazine and in-flight atoms.
+  const dartText = stats.ammo < 5 ? `dart: no lysin (${stats.ammo})`
+    : stats.fireIters > 0
+    ? `dart: ${(stats.fireIters / Math.max(1, stats.itersPerSec)).toFixed(1)}s · ammo ${stats.ammo}`
+    : `dart: READY · ammo ${stats.ammo}`;
   const line4 = stats.dartCount > 0 ? `${dartText} · ${stats.dartCount} out` : dartText;
-  const dartColor = stats.fireIters > 0 ? HUD_WARN : HUD_GOOD;
+  const dartColor = stats.ammo < 5 ? HUD_BAD
+    : stats.fireIters > 0 ? HUD_WARN : HUD_GOOD;
   const textX = hudTextX(ctx);
   const textW = Math.max(
     ctx.measureText(line1).width,

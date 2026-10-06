@@ -10,7 +10,8 @@ import { Cell, RADIUS, MAX_VELOCITY } from './cell';
 export const FIRE_COOLDOWN_TICKS  = 720;   // ~1.5 s between shots at 480 it/s
 export const DART_FUEL_TICKS      = 600;   // thrust burn, then the dart drifts
 const DART_THRUST                 = 0.10;  // per-step kick — ~5× the steering kick
-const DART_ATOMS                  = 5;     // lysin payload atoms per dart
+export const DART_ATOMS           = 5;     // lysin payload atoms per dart —
+                                           // also the ammo cost per shot
 // Terminal guidance — a dart veers toward nearby enemy membrane material
 // so near-misses curve into hits. Short range and a gentle turn rate
 // keep it an assist, not a lock-on.

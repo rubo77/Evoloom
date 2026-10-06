@@ -19,7 +19,7 @@
 // always shows the version that was actually bundled.
 declare const APP_VERSION: string;
 
-import { ControlMsg, SnapshotMsg, BurnProgressMsg, BurnDoneMsg, SaveStateMsg, LoadResultMsg, EventLogChunkMsg, SelectionExportMsg, SelectionState, CustomAtomDef, CustomRuleSpec, SaveState, STRIDE } from './snapshot';
+import { ControlMsg, SnapshotMsg, BurnProgressMsg, BurnDoneMsg, SaveStateMsg, LoadResultMsg, EventLogChunkMsg, SelectionExportMsg, FireRejectedMsg, SelectionState, CustomAtomDef, CustomRuleSpec, SaveState, STRIDE } from './snapshot';
 import { setCustomAtomColor as setGPUCustomColor } from './renderer-gpu';
 import { setClassicAtomColor, setEducationalAtomColor } from './renderer-2d';
 import { draw2D, draw2DClassic, drawHUD2D, drawGameHUD2D, drawArenaBorder, HUD_STATS_RECT } from './renderer-2d';
@@ -563,7 +563,7 @@ function sendTransfer(msg: ControlMsg, transferables: Transferable[]): void {
 // caused a deadlock when the worker only had 2 buffers in its pool).
 let lastSnapshot: SnapshotMsg | null = null;
 
-type WorkerMsg = SnapshotMsg | BurnProgressMsg | BurnDoneMsg | SaveStateMsg | LoadResultMsg | EventLogChunkMsg | SelectionExportMsg;
+type WorkerMsg = SnapshotMsg | BurnProgressMsg | BurnDoneMsg | SaveStateMsg | LoadResultMsg | EventLogChunkMsg | SelectionExportMsg | FireRejectedMsg;
 
 worker.onmessage = (e: MessageEvent<WorkerMsg>) => {
   const data = e.data;
@@ -584,6 +584,13 @@ worker.onmessage = (e: MessageEvent<WorkerMsg>) => {
   if (data.type === 'loadResult')   { onLoadResult(data);   return; }
   if (data.type === 'eventLogChunk'){ onEventLogChunk(data); return; }
   if (data.type === 'selectionExport') { onSelectionExport(data); return; }
+  if (data.type === 'fireRejected') {
+    // The worker is the authority on both gates — a stale mirrored
+    // cooldown or magazine can let a press through that still needs
+    // a visible explanation.
+    logStatus(data.reason === 'cooldown' ? 'Reloading…' : 'Out of lysin — fly through orange p-atoms to rearm');
+    return;
+  }
 };
 
 // ── State (UI-only) ─────────────────────────────────────────────────────────
@@ -1058,7 +1065,7 @@ function toggleGame(): void {
 const firePad = document.getElementById('fire-pad') as HTMLElement | null;
 const fireNeedle = document.getElementById('fire-needle') as HTMLElement | null;
 let lastFireCooldownIter = 0; // worker-side reload, mirrored per snapshot
-let prevEnemyCount = -1; // last snapshot's enemy loop count (-1 outside a match)
+let minEnemyCount = -1; // lowest enemy loop count seen this match (-1 outside a match)
 
 if (firePad) {
   firePad.addEventListener('pointerdown', (e) => {
@@ -1072,6 +1079,9 @@ if (firePad) {
     // the last-shot marker. 0deg is straight up, so offset by 90°.
     const deg = Math.atan2(dy, dx) * 180 / Math.PI + 90;
     if (fireNeedle) fireNeedle.style.transform = `rotate(${deg}deg)`;
+    // The mirrored magazine is a fast-path hint only — when it is stale
+    // the 'fire' message still reaches the worker, which answers a real
+    // shortage with 'fireRejected' and the status line explains it.
     if (lastFireCooldownIter > 0) return; // still reloading
     send({ type: 'fire', x: dx, y: dy });
     console.log(`[FIRE] dart requested dir(${(dx / mag).toFixed(2)},${(dy / mag).toFixed(2)})`);
@@ -3250,6 +3260,7 @@ function drawHud(ctx: CanvasRenderingContext2D, snap: SnapshotMsg): void {
       gameStatus: snap.gameStatus,
       fireIters: snap.fireCooldownIter,
       dartCount: snap.projectileCount,
+      ammo: snap.lysinAmmo,
     });
   } else {
     drawHUD2D(ctx, snap.iterations, snap.atomCount, snap.atoms);
@@ -3280,13 +3291,21 @@ function loop(): void {
       // (drawHud only runs in educational view with the HUD visible).
       lastFireCooldownIter = snap.fireCooldownIter;
       firePad?.style.setProperty('--cd', snap.fireCooldownFrac.toFixed(3));
-      // Kill feed — announce each destroyed enemy loop in the status line.
-      if (snap.gameStatus === 0 && prevEnemyCount >= 0 && snap.enemyCount < prevEnemyCount) {
-        logStatus(`☠ Enemy down — ${snap.enemyCount} left`);
+      firePad?.classList.toggle('empty', snap.lysinAmmo < 5);
+      // Kill feed — enemies replicate mid-match, so only a drop below
+      // the running minimum counts as a real loss; a bounce back down
+      // after a division is not a kill.
+      if (snap.gameStatus === 0) {
+        if (minEnemyCount < 0) minEnemyCount = snap.enemyCount;
+        else if (snap.enemyCount < minEnemyCount) {
+          minEnemyCount = snap.enemyCount;
+          logStatus(`☠ Enemy down — ${snap.enemyCount} left`);
+        }
+      } else {
+        minEnemyCount = -1; // match ended — the next one seeds fresh
       }
-      prevEnemyCount = snap.gameStatus === 0 ? snap.enemyCount : -1;
-    } else if (prevEnemyCount !== -1) {
-      prevEnemyCount = -1;
+    } else if (minEnemyCount !== -1) {
+      minEnemyCount = -1;
     }
     if (viewMode === 'classic') {
       // Classic mode renders entirely onto the overlay canvas (which always

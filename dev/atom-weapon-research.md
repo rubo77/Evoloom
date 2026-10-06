@@ -132,7 +132,60 @@ exit) · tutorial.spec.js still green · tsc + build + 14/14 smoke tests.
   `dart-sim.ts` with the enemy placed 40 units off the firing line:
   the dart curved from y=250 to y≈264 and detonated at iter 52.
 - **Kill feed:** `☠ Enemy down — N left` in the status line whenever
-  the enemy loop count drops mid-match.
+  the enemy loop count drops mid-match. Reports only new minimums —
+  enemies replicate mid-match, so a bounce down after a division
+  (5→6→5) is not a kill; a drop below the running minimum is.
+
+## Iteration 3 — ammo economy, enemy threat, authoritative rejects
+
+### Ammunition economy
+
+- Darts cost **5 lysin atoms** (`DART_ATOMS`), drawn from a worker-side
+  magazine. The match starts with **15 atoms = 3 darts**
+  (`DART_AMMO_START`, shared via `snapshot.ts`), magazine capped at 50
+  (`DART_AMMO_MAX` = 10 darts).
+- **Pickup:** flying through ambient orange `p` atoms within
+  `RADIUS × 2.2` of a player-controlled atom banks them (removed from
+  the soup). Lysin spots become a strategic resource instead of pure
+  scenery.
+- The HUD dart line shows the magazine (`dart: READY · ammo 15`, or
+  `dart: no lysin (N)` in red below 5); the pad gains an `empty` class
+  (dimmed) when it can't fire.
+
+### Enemy threat
+
+- Enemies seek the player: enemy membrane atoms within 700 units get
+  a weak per-tick velocity pull toward the player centroid
+  (`ENEMY_SEEK_KICK 0.004`, evaluated every 10 iterations) — well below
+  the steering bias, so the player can always outrun a pursuer.
+- Contact damages the player: player membrane atoms with a bonded
+  enemy `a` within `RADIUS × 2.5` roll a bite each check
+  (`BITE_CASES 120`) — a hit debonds one S–S pair and frees the atom
+  back to soup, the same breach lysin causes. Rare per tick, lethal
+  on a sustained hug — the match now has real stakes, not just a
+  shooting gallery.
+
+### Authoritative rejection channel
+
+- The fire gate lives in the worker. A mirrored client-side check can
+  lag a snapshot — the first Playwright failures were presses swallowed
+  by a stale `lysinAmmo = 0` from pre-match sandbox snapshots.
+- Fix: the worker answers real rejects with a `fireRejected` message
+  (`reason: 'ammo' | 'cooldown'`); the status line explains
+  `Out of lysin — fly through orange p-atoms to rearm` or
+  `Reloading…`. The main thread keeps the cooldown mirror only as a
+  fast-path for the pad sweep — never as the gate.
+
+### Test fixes discovered here
+
+- `fire-pad.spec.js` waits on the pad's `--cd` CSS var (mirrors the
+  live cooldown fraction). The snapshot lags the worker's `[WEAPON]`
+  console line, so after each confirmed shot the test first waits for
+  the reload to *engage* (non-zero) and only then for `0.000` —
+  otherwise it reads the stale zero and presses into the real
+  cooldown.
+- Kill feed assert moved off the status text (transient, overwritten
+  by other feeds) onto the deterministic worker log line.
 
 ## Test plan
 

@@ -36,6 +36,7 @@ test('fire pad fires a lysin dart toward the press offset', async ({ page }) => 
   // Main thread logs the requested direction; the needle turns east.
   await page.waitForTimeout(500);
   const fireLog = logs.find((l) => l.includes('[FIRE] dart requested'));
+  if (!fireLog) console.log('CAPTURED LOGS:\n' + logs.slice(-40).join('\n'));
   expect(fireLog).toBeTruthy();
   expect(fireLog).toContain('dir(1.00,0.00)');
 
@@ -43,20 +44,42 @@ test('fire pad fires a lysin dart toward the press offset', async ({ page }) => 
     .evaluate((el) => el.style.transform);
   expect(needleDeg).toContain('rotate(90deg)'); // 0deg = up → east is +90
 
-  // Cooldown is iteration-based (720 iters, ~400 ms at full rate), so
-  // only a re-press that lands while the counter still runs is blocked:
-  // wait for the first shot's worker log, re-press immediately, then
-  // confirm a press after the reload window fires again.
+  // Cooldown is iteration-based (720 iters, ~400 ms at full rate, longer
+  // under load). The pad's --cd CSS var mirrors the live fraction — but
+  // the snapshot lags the worker log, so after each shot the test must
+  // first see the reload ENGAGE (non-zero) before waiting for 0.000,
+  // otherwise it reads the stale zero from the previous reload.
   const firedCount = () => logs.filter((l) => l.includes('[WEAPON] dart fired')).length;
+  const cooling = () => pad.evaluate((el) => el.style.getPropertyValue('--cd').trim() !== '0.000');
+  const reloaded = () => pad.evaluate((el) => el.style.getPropertyValue('--cd').trim() === '0.000');
+  const waitReload = async () => {
+    await expect.poll(cooling, { timeout: 5000 }).toBe(true);
+    await expect.poll(reloaded, { timeout: 15000 }).toBe(true);
+  };
   await expect.poll(firedCount, { timeout: 8000 }).toBe(1);
 
   await page.mouse.click(box.x + box.width * 0.85, box.y + box.height * 0.5);
   await page.waitForTimeout(200);
-  expect(firedCount()).toBe(1);
+  expect(firedCount()).toBe(1); // swallowed while the reload still runs
 
-  await page.waitForTimeout(3000); // well past the reload window
+  await waitReload();
   await page.mouse.click(box.x + box.width * 0.85, box.y + box.height * 0.5);
   await expect.poll(firedCount, { timeout: 5000 }).toBe(2);
+
+  // Ammo — the match starts with 15 lysin atoms = 3 darts. The third
+  // shot fires; the fourth must be rejected as out of lysin.
+  await waitReload();
+  await page.mouse.click(box.x + box.width * 0.85, box.y + box.height * 0.5);
+  await expect.poll(firedCount, { timeout: 5000 }).toBe(3);
+
+  await waitReload();
+  await page.mouse.click(box.x + box.width * 0.85, box.y + box.height * 0.5);
+  await page.waitForTimeout(600);
+  expect(firedCount()).toBe(3); // no fourth shot
+  // The worker rejects the fire — the status line may be overwritten by
+  // the kill feed, so the worker's own log line is the assertion target.
+  expect(logs.some((l) => l.includes('[WEAPON] fire rejected') && l.includes('out of lysin'))).toBeTruthy();
+  await expect(pad).toHaveClass(/empty/);
 
   // Pad hides again when leaving game mode.
   await page.keyboard.press('g'); // panel is closed — shortcut toggles game mode

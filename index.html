@@ -334,6 +334,9 @@
       cursor: crosshair;
     }
     #fire-pad.shown { display: block; }
+    /* Out of lysin — pad dims so the reload sweep can't be mistaken
+       for a ready weapon */
+    #fire-pad.empty { opacity: 0.35; }
     /* Cooldown sweep — a conic wedge draining as the dart reloads.
        --cd holds the remaining fraction 0..1, set from the render loop. */
     #fire-pad::before {

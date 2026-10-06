@@ -361,6 +361,24 @@
       border-radius: 2px;
       pointer-events: none;
     }
+    /* Enemy bearing — a small red tick on the rim pointing at the
+       nearest enemy membrane (updated from each snapshot). Hidden when
+       no enemy exists. */
+    #fire-enemy {
+      position: absolute;
+      left: calc(50% - 2px);
+      top: 3px;
+      width: 4px;
+      height: 9px;
+      border-radius: 2px;
+      background: #ff5f5f;
+      box-shadow: 0 0 4px rgba(255, 95, 95, 0.8);
+      transform-origin: 50% 41px; /* pad center: half of the 88px pad minus the 3px top offset */
+      transform: rotate(0deg);
+      pointer-events: none;
+      display: none;
+    }
+    #fire-enemy.shown { display: block; }
     #fire-pad::after {
       content: '';
       position: absolute;
@@ -1682,7 +1700,7 @@
       <button id="tutorial-btn" class="canvas-tool-btn" aria-label="Interactive tutorial" title="Interactive tutorial" data-help="Start the guided interactive tutorial">?</button>
     </div>
     <button id="hud-toggle" class="canvas-tool-btn hud-toggle" aria-label="Toggle stats overlay" title="Hide / show stats overlay" data-help="Hide / show the stats &amp; legend overlay">‹</button>
-    <div id="fire-pad" role="button" aria-label="Fire lysin dart" title="Lysin dart — press toward a direction to fire"><div id="fire-needle"></div></div>
+    <div id="fire-pad" role="button" aria-label="Fire lysin dart" title="Lysin dart — press toward a direction to fire"><div id="fire-needle"></div><div id="fire-enemy"></div></div>
     <div id="game-overlay">
       <div id="game-overlay-title"></div>
       <div id="game-overlay-sub"></div>

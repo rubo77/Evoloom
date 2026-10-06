@@ -44,6 +44,13 @@ test('fire pad fires a lysin dart toward the press offset', async ({ page }) => 
     .evaluate((el) => el.style.transform);
   expect(needleDeg).toContain('rotate(90deg)'); // 0deg = up → east is +90
 
+  // Enemy bearing — the red rim tick tracks the nearest enemy membrane
+  // and must be visible while enemies exist.
+  const enemyTick = page.locator('#fire-enemy');
+  await expect(enemyTick).toHaveClass(/shown/, { timeout: 10000 });
+  const enemyDeg = await enemyTick.evaluate((el) => el.style.transform);
+  expect(enemyDeg).toContain('rotate(');
+
   // Cooldown is iteration-based (720 iters, ~400 ms at full rate, longer
   // under load). The pad's --cd CSS var mirrors the live fraction — but
   // the snapshot lags the worker log, so after each shot the test must

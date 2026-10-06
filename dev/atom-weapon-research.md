@@ -201,6 +201,21 @@ exit) · tutorial.spec.js still green · tsc + build + 14/14 smoke tests.
 - Verified: tsc, build, fire-pad spec green, 14/14 smoke tests,
   mobile-build BUILD SUCCESSFUL.
 
+## Iteration 5 — enemy bearing tick
+
+- The snapshot now carries `enemyDirX/Y` + `enemyDist`: the unit vector
+  and distance from the player centroid to the nearest bonded enemy
+  membrane atom.
+- The fire pad renders it as a small glowing red tick on the rim
+  (`#fire-enemy`), rotated with the same convention as the aim needle
+  — lining a press up with the tick fires straight at the closest
+  threat, including offscreen ones. Hidden when no enemy exists.
+- Turns the pad into a real instrument instead of a blind trigger —
+  pairs naturally with the 150-unit terminal homing window.
+- Playwright asserts the tick is `shown` with a rotation once a match
+  starts; verified visually (tick at bottom-left rim, needle aimed
+  west, cooldown sweep draining).
+
 ## Test plan
 
 - Playwright: enter game mode → dispatch fire → assert projectile atoms

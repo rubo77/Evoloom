@@ -43,6 +43,9 @@ export type SnapshotMsg = {
   fireCooldownFrac: number;   // 0..1 fraction of cooldown remaining (1 = just fired)
   projectileCount: number;    // dart atoms still under thrust this snapshot
   lysinAmmo: number;          // lysin atoms banked for darts (DART_ATOMS per shot)
+  enemyDirX: number;          // unit vector player → nearest enemy membrane atom (0,0 when none)
+  enemyDirY: number;
+  enemyDist: number;          // distance to that atom (0 when no enemy membrane exists)
 };
 
 // Lysin atoms banked at match start — shared by the worker (authoritative

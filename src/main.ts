@@ -1078,6 +1078,7 @@ function toggleGame(): void {
 // reload, drained each frame from the worker's snapshot fields.
 const firePad = document.getElementById('fire-pad') as HTMLElement | null;
 const fireNeedle = document.getElementById('fire-needle') as HTMLElement | null;
+const fireEnemy = document.getElementById('fire-enemy') as HTMLElement | null;
 let lastFireCooldownIter = 0; // worker-side reload, mirrored per snapshot
 let minEnemyCount = -1; // lowest enemy loop count seen this match (-1 outside a match)
 let lastBiteAt = -1e9;        // performance.now() of the last enemy bite (drives the damage flash)
@@ -3309,6 +3310,18 @@ function loop(): void {
       lastFireCooldownIter = snap.fireCooldownIter;
       firePad?.style.setProperty('--cd', snap.fireCooldownFrac.toFixed(3));
       firePad?.classList.toggle('empty', snap.lysinAmmo < 5);
+      // Enemy bearing tick — same angle convention as the aim needle
+      // (0deg = up), so a press aligned with the tick fires at the
+      // nearest enemy.
+      if (fireEnemy) {
+        if (snap.enemyDist > 0) {
+          fireEnemy.classList.add('shown');
+          const deg = Math.atan2(snap.enemyDirY, snap.enemyDirX) * 180 / Math.PI + 90;
+          fireEnemy.style.transform = `rotate(${deg}deg)`;
+        } else {
+          fireEnemy.classList.remove('shown');
+        }
+      }
       // Kill feed — enemies replicate mid-match, so only a drop below
       // the running minimum counts as a real loss; a bounce back down
       // after a division is not a kill.

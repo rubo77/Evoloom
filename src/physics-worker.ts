@@ -773,6 +773,30 @@ function postSnapshot(): void {
   const fireCooldown = inGame
     ? Math.max(0, FIRE_COOLDOWN_TICKS - (grid.iterations - lastFireIter))
     : 0;
+  // Bearing to the nearest enemy membrane atom — drives the red tick
+  // on the fire pad so the player can aim at offscreen threats.
+  let enemyDirX = 0, enemyDirY = 0, enemyDist = 0;
+  if (inGame && gameStatus === 0) {
+    let pcx = 0, pcy = 0, pcnt = 0;
+    for (const c of grid.getCells()) {
+      if (c.playerControlled) { pcx += c.loc.x; pcy += c.loc.y; pcnt++; }
+    }
+    if (pcnt > 0) {
+      pcx /= pcnt; pcy /= pcnt;
+      let best = Infinity, bx = 0, by = 0;
+      for (const c of grid.getCells()) {
+        if (c.type !== 'a' || c.playerControlled || c.bonds.size === 0) continue;
+        const dx = c.loc.x - pcx, dy = c.loc.y - pcy;
+        const d = dx * dx + dy * dy;
+        if (d < best) { best = d; bx = dx; by = dy; }
+      }
+      if (best < Infinity) {
+        enemyDist = Math.sqrt(best);
+        enemyDirX = bx / enemyDist;
+        enemyDirY = by / enemyDist;
+      }
+    }
+  }
   const msg: SnapshotMsg = {
     type: 'snapshot',
     iterations: grid.iterations,
@@ -798,6 +822,9 @@ function postSnapshot(): void {
     fireCooldownFrac: fireCooldown / FIRE_COOLDOWN_TICKS,
     projectileCount: lastDartCount,
     lysinAmmo,
+    enemyDirX,
+    enemyDirY,
+    enemyDist,
   };
   self.postMessage(msg, [
     atoms.buffer as Transferable,

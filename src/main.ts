@@ -1061,6 +1061,7 @@ function toggleGame(): void {
     return;
   }
   gameMode = true;
+  matchStartAt = performance.now();
   gameBtn.textContent = '🦠 Exit game';
   gameBtn.classList.add('active');
   send({ type: 'startGame' });
@@ -1081,6 +1082,7 @@ const fireNeedle = document.getElementById('fire-needle') as HTMLElement | null;
 const fireEnemy = document.getElementById('fire-enemy') as HTMLElement | null;
 let lastFireCooldownIter = 0; // worker-side reload, mirrored per snapshot
 let minEnemyCount = -1; // lowest enemy loop count seen this match (-1 outside a match)
+let matchStartAt = -1e9; // performance.now() of match start — suppresses the kill-feed during loop-detection warmup
 let lastBiteAt = -1e9;        // performance.now() of the last enemy bite (drives the damage flash)
 let lastBiteStatusAt = -1e9;  // throttles the 'membrane breached' status text
 
@@ -3324,12 +3326,17 @@ function loop(): void {
       }
       // Kill feed — enemies replicate mid-match, so only a drop below
       // the running minimum counts as a real loss; a bounce back down
-      // after a division is not a kill.
+      // after a division is not a kill. Loop detection flickers during
+      // the first seconds of a match (a spawning cell can count as an
+      // extra loop for a frame), so the feed stays silent until the
+      // detector has settled.
       if (snap.gameStatus === 0) {
-        if (minEnemyCount < 0) minEnemyCount = snap.enemyCount;
-        else if (snap.enemyCount < minEnemyCount) {
-          minEnemyCount = snap.enemyCount;
-          logStatus(`☠ Enemy down — ${snap.enemyCount} left`);
+        if (performance.now() - matchStartAt > 2500) {
+          if (minEnemyCount < 0) minEnemyCount = snap.enemyCount;
+          else if (snap.enemyCount < minEnemyCount) {
+            minEnemyCount = snap.enemyCount;
+            logStatus(`☠ Enemy down — ${snap.enemyCount} left`);
+          }
         }
       } else {
         minEnemyCount = -1; // match ended — the next one seeds fresh

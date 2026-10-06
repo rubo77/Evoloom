@@ -216,6 +216,36 @@ exit) · tutorial.spec.js still green · tsc + build + 14/14 smoke tests.
   starts; verified visually (tick at bottom-left rim, needle aimed
   west, cooldown sweep draining).
 
+## Iteration 6 — threat balancing, measured not guessed
+
+`dev/playwright/threat-probe.cjs` starts a real match, never steers and
+counts `[GAME]` bite logs + the end overlay — the live balance probe.
+
+- **First tuning was two orders of magnitude too weak:** a 0.004 kick
+  every 10 iterations produced **0 bites in 90 s** — thermal noise and
+  bond springs ate the pull entirely.
+- **The naive fix overshot:** a 0.005 kick every iteration killed the
+  idle player in ~5 s. Root cause: bonded atoms keep their velocity
+  (`bondedDamping = 1.0`), so ANY constant kick accumulates until
+  `MAX_VELOCITY` (2.4/step) — kick magnitude only sets the spin-up
+  time, enemies zoom at full speed either way.
+- **Drag-seek model instead:** every iteration, each enemy membrane
+  atom's velocity blends toward a small pursuit vector
+  (`ENEMY_SEEK_SPEED 0.12` units/step, `ENEMY_SEEK_BLEND 0.003`).
+  Velocity converges exponentially on a slow creep that noise can't
+  defeat — and a steered player still outruns it.
+- **Measured result:** idle player — first bite ~55 s, death ~60 s
+  under bite cascade (the normal predator chemistry keeps grinding
+  once the ring is breached). Passivity is punished, kiting survives.
+- The 700-unit range gate was removed with the rewrite — enemies hunt
+  across the whole arena.
+- **Startup flicker fix:** the kill feed's `minEnemyCount` now seeds
+  only after a 2.5 s warmup; loop detection can count a spawning cell
+  as an extra loop for a frame and used to emit a false
+  `☠ Enemy down` seconds into every match.
+- Telemetry: `[GAME] nearest enemy N units` logs every 1200 iterations
+  while a match runs, so approach speed stays observable.
+
 ## Test plan
 
 - Playwright: enter game mode → dispatch fire → assert projectile atoms

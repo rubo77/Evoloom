@@ -214,14 +214,17 @@ const LOSE_NO_PLAYER_TICKS    = 480;   // ~1 sec grace — a transient frame wit
 // (spawn + lifecycle live in dart.ts, shared with dev/dart-sim.ts).
 const DART_AMMO_MAX        = 50;   // magazine cap — 10 darts
 const AMMO_PICKUP_RANGE    = RADIUS * 2.2;
-// Enemy pressure — membranes within seek range drift toward the player
-// and grind its ring on contact. The kick stays well below the steering
-// bias so the player can always outrun a pursuer; bites are rare per
-// contact tick but a sustained hug is lethal.
-const ENEMY_SEEK_RANGE     = 700;
-const ENEMY_SEEK_KICK      = 0.004;
+// Enemy pressure — membranes drift toward the player and grind its
+// ring on contact. A constant kick would be wrong here: bonded atoms
+// keep their velocity (bondedDamping = 1.0), so ANY persistent kick
+// accumulates to MAX_VELOCITY and every enemy zooms at full speed.
+// Instead each membrane atom's velocity blends toward a small pursuit
+// vector — an exponential approach to ENEMY_SEEK_SPEED that thermal
+// noise can't defeat and the player's steering can still outrun.
+const ENEMY_SEEK_SPEED     = 0.12;  // target drift toward the player (units/step)
+const ENEMY_SEEK_BLEND     = 0.003; // fraction of the velocity gap closed per step
 const BITE_CASES           = 120;
-const THREAT_TICK_MOD      = 10;   // threat pass cadence (iterations)
+const THREAT_TICK_MOD      = 10;   // bite-check cadence (iterations)
 let gameStatus = 0;        // 0 playing, 1 won, 2 lost
 let noEnemyStartIter = -1; // -1 = enemies present; otherwise iteration when they vanished
 let noPlayerStartIter = -1; // same, for the player's loop
@@ -435,12 +438,10 @@ function collectLysinAmmo(): void {
   }
 }
 
-// Enemy pressure — enemy membrane atoms within seek range get a weak
-// per-tick velocity pull toward the player centroid, so cells slowly
-// converge instead of waiting to be hunted. On contact, a bite roll can
-// snap one bond in the player's ring — the same membrane breach lysin
-// causes, just from cell contact. Both run on a fixed cadence.
-function updateEnemyThreat(): void {
+// Enemy seek — enemy membrane atoms blend their velocity toward a slow
+// pursuit vector pointing at the player centroid, so cells creep toward
+// the player instead of waiting to be hunted. Runs every iteration.
+function updateEnemySeek(): void {
   let cx = 0, cy = 0, cnt = 0;
   for (const c of grid.getCells()) {
     if (!c.playerControlled) continue;
@@ -452,10 +453,17 @@ function updateEnemyThreat(): void {
     if (c.type !== 'a' || c.playerControlled || c.bonds.size === 0) continue;
     const dx = cx - c.loc.x, dy = cy - c.loc.y;
     const d = Math.hypot(dx, dy);
-    if (d > ENEMY_SEEK_RANGE || d < 1) continue;
-    c.vel.x += (dx / d) * ENEMY_SEEK_KICK;
-    c.vel.y += (dy / d) * ENEMY_SEEK_KICK;
+    if (d < 1) continue;
+    const tx = (dx / d) * ENEMY_SEEK_SPEED, ty = (dy / d) * ENEMY_SEEK_SPEED;
+    c.vel.x += (tx - c.vel.x) * ENEMY_SEEK_BLEND;
+    c.vel.y += (ty - c.vel.y) * ENEMY_SEEK_BLEND;
   }
+}
+
+// Contact damage — a player membrane atom with a bonded enemy atom in
+// reach rolls a bite that can snap one bond in the ring: the same
+// breach lysin causes, just from cell contact. Fixed cadence.
+function updateEnemyThreat(): void {
   for (const c of grid.getCells()) {
     if (c.type !== 'a' || !c.playerControlled || c.bonds.size === 0) continue;
     const near = grid.getAllWithinRadius(c.loc.x, c.loc.y, RADIUS * 2.5);
@@ -795,6 +803,11 @@ function postSnapshot(): void {
         enemyDirX = bx / enemyDist;
         enemyDirY = by / enemyDist;
       }
+      // Threat telemetry — approach speed tuning lives or dies by this
+      // number, so it stays visible in the console while a match runs.
+      if (grid.iterations % 1200 === 0) {
+        console.log(`[GAME] nearest enemy ${enemyDist > 0 ? enemyDist.toFixed(0) : '—'} units`);
+      }
     }
   }
   const msg: SnapshotMsg = {
@@ -1090,6 +1103,7 @@ function runOneStep(): void {
   }
   if (inGame && gameStatus === 0) {
     if (grid.iterations % 5 === 0) collectLysinAmmo();
+    updateEnemySeek();
     if (grid.iterations % THREAT_TICK_MOD === 0) updateEnemyThreat();
   }
   if (grid.iterations > 0) {

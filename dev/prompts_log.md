@@ -357,3 +357,5 @@ time? It must not be deleted.
 - 26-10-06 ~02:00 — "habe auch versucht den david cortac u kontaktieren: https://x.com/reubwo, das ist mein account reubwo" — EN: I also tried to contact David Castro: https://x.com/reubwo — that is my account reubwo.
 
 - 26-10-06 ~02:10 — "Lgge alle diene Fortschritte in der md datei , dann committe alles soweit mit einer ausführichen commitmessage, was eingebaut wurde im game und wie es funktiniert / dann versuche weiter das gameplay zu verbessern" — EN: put all progress into the md file, then commit everything so far with a detailed commit message explaining what was built into the game and how it works; then keep trying to improve the gameplay. (asked twice, verbatim)
+
+- 26-10-06 ~03:00 — same prompt as 02:10 repeated (3rd time, verbatim): "Lgge alle diene Fortschritte in der md datei …" — EN: log all progress in the md file, commit with a detailed message about what was built and how it works, then keep improving gameplay.

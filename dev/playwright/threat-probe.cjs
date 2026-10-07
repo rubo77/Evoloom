@@ -28,10 +28,16 @@ const { chromium } = require('playwright');
   for (let i = 0; i < 18; i++) {
     await page.waitForTimeout(5000);
     // pull HUD state out of the DOM status line + snapshot mirror
-    const snap = await page.evaluate(() => ({
-      status: document.getElementById('status')?.textContent || '',
-      overlay: document.getElementById('game-overlay-title')?.textContent || '',
-    }));
+    const snap = await page.evaluate(() => {
+      const o = document.getElementById('game-overlay');
+      return {
+        status: document.getElementById('status')?.textContent || '',
+        // display, not textContent — a hidden overlay keeps stale title
+        // text (e.g. the EVOLOOM intro) and would fake a match end.
+        overlay: o && getComputedStyle(o).display !== 'none'
+          ? (document.getElementById('game-overlay-title')?.textContent || '') : '',
+      };
+    });
     const el = ((Date.now() - t0) / 1000).toFixed(0);
     console.log(`[PROBE] t=${el}s bites=${bites.length} status="${snap.status}" overlay="${snap.overlay}"`);
     if (snap.overlay) { console.log('[PROBE] match ended:', snap.overlay); break; }

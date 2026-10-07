@@ -1034,6 +1034,9 @@ function applyGameModeUI(): void {
   hydroBtn.disabled = gameMode;
   // Lysin dart fire pad replaces the top-left legend while a match runs.
   firePad?.classList.toggle('shown', gameMode);
+  // On touch layouts the control panel opens as a modal over a backdrop
+  // that would cover the fire pad — dismiss it when a match starts.
+  if (gameMode && panelBackdrop?.classList.contains('shown')) closePanel();
   hideGameOverlay();
 }
 

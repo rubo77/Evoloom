@@ -9,7 +9,13 @@ import { Cell, RADIUS, MAX_VELOCITY } from './cell';
 
 export const FIRE_COOLDOWN_TICKS  = 720;   // ~1.5 s between shots at 480 it/s
 export const DART_FUEL_TICKS      = 600;   // thrust burn, then the dart drifts
-const DART_THRUST                 = 0.10;  // per-step kick — ~5× the steering kick
+const DART_SPEED                  = MAX_VELOCITY * 0.5; // cruise speed —
+                                           // half the global cap so the
+                                           // flight stays readable and
+                                           // dodgeable
+const DART_THRUST                 = 0.10;  // per-step kick — steers the
+                                           // flight path; the speed clamp
+                                           // in updateDarts caps cruise
 export const DART_ATOMS           = 5;     // lysin payload atoms per dart —
                                            // also the ammo cost per shot
 // Terminal guidance — a dart veers toward nearby enemy membrane material
@@ -50,10 +56,10 @@ export function spawnDart(
     a.thrustX = ux * DART_THRUST;
     a.thrustY = uy * DART_THRUST;
     a.thrustUntilIter = now + DART_FUEL_TICKS;
-    // Initial velocity inside the cap so the launch reads instantly
-    // instead of waiting for the kick to spool up.
-    a.vel.x = ux * MAX_VELOCITY * 0.5;
-    a.vel.y = uy * MAX_VELOCITY * 0.5;
+    // Launch straight at cruise speed so the shot reads instantly
+    // instead of spooling up.
+    a.vel.x = ux * DART_SPEED;
+    a.vel.y = uy * DART_SPEED;
   }
   return { cluster, x: px, y: py };
 }
@@ -95,6 +101,15 @@ export function updateDarts(grid: Grid, clusters: Cell[][], now: number): Cell |
       hx = hx / hm * DART_THRUST;
       hy = hy / hm * DART_THRUST;
       for (const a of cluster) { a.thrustX = hx; a.thrustY = hy; }
+    }
+    // Cruise clamp — the constant kick would otherwise accumulate to
+    // MAX_VELOCITY; hold the cluster at DART_SPEED instead.
+    for (const a of cluster) {
+      const s = Math.hypot(a.vel.x, a.vel.y);
+      if (s > DART_SPEED) {
+        a.vel.x *= DART_SPEED / s;
+        a.vel.y *= DART_SPEED / s;
+      }
     }
     for (const atom of cluster) {
       const near = grid.getAllWithinRadius(atom.loc.x, atom.loc.y, RADIUS * 2.4);

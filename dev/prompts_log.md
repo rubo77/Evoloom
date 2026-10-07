@@ -367,3 +367,9 @@ time? It must not be deleted.
 - 26-10-06 ~05:00 — same prompt repeated (6th time, verbatim): log progress to md, commit with detailed message, keep improving gameplay.
 
 - 26-10-06 ~05:45 — same prompt repeated (7th time, verbatim): log progress to md, commit with detailed message, keep improving gameplay.
+
+- 26-10-07 00:36 — "die projektile müssen halb so schnell bewegen" — EN: the projectiles must move at half speed.
+
+- 26-10-07 ~05:00 — "der runde target kreis im hud muss doppelt so gross" — EN: the round target circle in the HUD must be twice as big.
+
+- 26-10-07 ~05:30 — "das homing missile effekt muss durch einen zusatz erfolg freigeschaltet werden oder extra lysin kosten / committe das, dann erkläre, wie die bewegung der spieler zelle funktioniert, mir scheint das sehr langsam ausserhalb des wassers, innerhalb ist es merklich, aber ausserhalb scheint es fast keinen effekt zu haben / baue ein, dass das im game hud, der kreis einen grünen schimmer bekommt in der richtung, in die man die zelle gerade bewegt, damit man ein visuelles feedback hat, wenn man mit wasd oder mit touch auf den canvas eine bewegung auslöst, und der schimmer soll wieder verschwinden, wenn man aufhört zu drücken / ausserdem sollen auch die pfeiltasten für die bewegung funktionieren, nicht nur wasd" — EN: the homing missile effect must be unlocked by an additional achievement or cost extra lysin; commit this, then explain how the player cell movement works — it seems very slow outside water, noticeable inside; build a green shimmer on the HUD circle in the direction the cell is currently moving as visual feedback for WASD or touch movement, disappearing when input stops; also make the arrow keys work for movement, not only WASD.

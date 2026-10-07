@@ -323,8 +323,8 @@
       position: absolute;
       top: 106px;         /* below the game stats box on the overlay canvas */
       left: 10px;
-      width: 88px;
-      height: 88px;
+      width: 176px;
+      height: 176px;
       border-radius: 50%;
       background: rgba(0, 0, 0, 0.55);
       border: 1px solid rgba(255, 255, 255, 0.25);
@@ -351,14 +351,14 @@
        the last fired/aimed direction (0deg = straight up). */
     #fire-needle {
       position: absolute;
-      left: calc(50% - 2px);
-      top: calc(50% - 30px);
-      width: 4px;
-      height: 30px;
+      left: calc(50% - 3px);
+      top: calc(50% - 60px);
+      width: 6px;
+      height: 60px;
       transform-origin: 50% 100%;
       transform: rotate(0deg);
       background: linear-gradient(to top, transparent, var(--c-primary, #d4a64f));
-      border-radius: 2px;
+      border-radius: 3px;
       pointer-events: none;
     }
     /* Enemy bearing — a small red tick on the rim pointing at the
@@ -366,14 +366,14 @@
        no enemy exists. */
     #fire-enemy {
       position: absolute;
-      left: calc(50% - 2px);
-      top: 3px;
-      width: 4px;
-      height: 9px;
-      border-radius: 2px;
+      left: calc(50% - 3px);
+      top: 4px;
+      width: 6px;
+      height: 16px;
+      border-radius: 3px;
       background: #ff5f5f;
-      box-shadow: 0 0 4px rgba(255, 95, 95, 0.8);
-      transform-origin: 50% 41px; /* pad center: half of the 88px pad minus the 3px top offset */
+      box-shadow: 0 0 5px rgba(255, 95, 95, 0.8);
+      transform-origin: 50% 84px; /* pad center: half of the 176px pad minus the 4px top offset */
       transform: rotate(0deg);
       pointer-events: none;
       display: none;
@@ -390,14 +390,14 @@
        free lysin atom (supply spot or spent dart payload). */
     #fire-lysin {
       position: absolute;
-      left: calc(50% - 3px);
-      top: 6px;
-      width: 6px;
-      height: 6px;
+      left: calc(50% - 5px);
+      top: 8px;
+      width: 10px;
+      height: 10px;
       border-radius: 50%;
       background: #f0a63c;
-      box-shadow: 0 0 4px rgba(240, 166, 60, 0.9);
-      transform-origin: 50% 38px;
+      box-shadow: 0 0 5px rgba(240, 166, 60, 0.9);
+      transform-origin: 50% 80px;
       transform: rotate(0deg);
       pointer-events: none;
       display: none;
@@ -408,9 +408,9 @@
       position: absolute;
       left: 50%;
       top: 50%;
-      width: 7px;
-      height: 7px;
-      margin: -3.5px;
+      width: 10px;
+      height: 10px;
+      margin: -5px;
       border-radius: 50%;
       background: rgba(255, 255, 255, 0.75);
       pointer-events: none;

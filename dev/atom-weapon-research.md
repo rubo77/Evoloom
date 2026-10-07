@@ -324,6 +324,38 @@ survival (rearm→fire cycle ~45 s per dart, +1–2 atoms per flythrough).
 - `win-probe.cjs` / `fight-probe.cjs` stay in dev/playwright as the
   balance harnesses for future tuning.
 
+## Iteration 11 — half-speed darts
+
+Player feedback: the projectile crossed the screen too fast to read.
+Physics subtlety — `DART_THRUST` is a constant per-step kick and
+`bondedDamping` is 1.0, so the kick accumulates until the global
+`MAX_VELOCITY` cap: the dart cruised at full cap regardless of thrust
+size. The launch velocity `MAX_VELOCITY × 0.5` was already "half",
+it just spooled up afterwards.
+
+- `DART_SPEED = MAX_VELOCITY × 0.5` (1.2 u/step at RADIUS 6) is the
+  new cruise target; `updateDarts` clamps cluster speed to it every
+  tick while fuel lasts. Homing still steers the thrust vector — the
+  clamp only caps magnitude, so turn authority is unchanged.
+- dart-sim verifies: detonation iter 52 → 90 (~half speed over the
+  ~170-unit approach incl. homing curve), enemy ring still destroyed,
+  player intact. Effective range per fuel burn halves (~700 u) — still
+  covers the fight space.
+
+## Iteration 12 — doubled fire pad + mobile panel fix
+
+Player feedback: the round fire pad was too small to aim comfortably.
+
+- Pad 88 → 176 px; needle, enemy tick, lysin dot and center pip scaled
+  proportionally (transform origins recomputed for the new radius).
+  Direction math is radius-agnostic (atan2 on the press offset), so no
+  code change was needed.
+- Fix found while probing at a touch-width viewport: the control panel
+  opens as a modal over `#panel-backdrop` on narrow screens, and the
+  backdrop kept covering the pad after pressing Play — presses never
+  reached it. `applyGameModeUI` now closes the panel on match start
+  when the backdrop is shown (desktop docked panel is untouched).
+
 ## Test plan
 
 - Playwright: enter game mode → dispatch fire → assert projectile atoms

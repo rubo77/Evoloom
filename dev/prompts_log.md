@@ -349,3 +349,33 @@ The contact address must be evoloom-support@it.z11.de.
 ## 26-10-05 12:30
 Something deleted .idea/.name again — what could it have been this
 time? It must not be deleted.
+
+## 26-10-06
+
+- 26-10-06 ~01:30 — "analysiere die cheie,und versuche eine möglichkeit zu finden, wie man ein atom komplex erzeugen kann mit einem eigenen antrieb, den man auf seine gegner schiessen kann mit lysindrin, um die gegner zu zerstören, wenn du etwas gefunden hast, dann baue ein, dass im game mode statt der legende oben links ein button zu sehen ist, auf den man drücken kann um ein geschoss abzuschiessen, dabei kann man in dem button die richtung angeben, also eine art himmelsrichtungen nadel, jenachdem wo man drückt, startet das geschoss in diese richtung aus deiner zelle heraus. analysiere zuerst genau und berechne, was es für regeln geben könnte und was für extra atome, die so etwas ermöglichen, suche auch online auf der seite von david castor https://dabbycastro.com/ und https://x.com/davidortsac und was man sonst noch darüber finden kann, auch andere projekte über squirm3. sammel alles was du finden kannst in einem md file und dann plane wie man so eine abschuss-mechanik bauen könnte. teste solange rum, bis du etwas brauchbares gefunden hast, auch mit playwright und mehr debug ausgaben in der js console um rauszufinden, was passiert auf der simulation. du kannst ja auch kleinere simulationen starten" — EN: analyze the chemistry and find a way to create an atom complex with its own propulsion that can be shot at opponents using lysin to destroy them; once something viable is found, build a directional fire button (compass needle) replacing the top-left legend in game mode; first analyze and calculate possible rules and extra atoms needed; research dabbycastro.com, x.com/davidortsac and other squirm3 projects; collect findings in an md file and plan the firing mechanic; test until something useful is found, with playwright and extra debug console output, using smaller simulations.
+
+- 26-10-06 ~02:00 — "habe auch versucht den david cortac u kontaktieren: https://x.com/reubwo, das ist mein account reubwo" — EN: I also tried to contact David Castro: https://x.com/reubwo — that is my account reubwo.
+
+- 26-10-06 ~02:10 — "Lgge alle diene Fortschritte in der md datei , dann committe alles soweit mit einer ausführichen commitmessage, was eingebaut wurde im game und wie es funktiniert / dann versuche weiter das gameplay zu verbessern" — EN: put all progress into the md file, then commit everything so far with a detailed commit message explaining what was built into the game and how it works; then keep trying to improve the gameplay. (asked twice, verbatim)
+
+- 26-10-06 ~03:00 — same prompt as 02:10 repeated (3rd time, verbatim): "Lgge alle diene Fortschritte in der md datei …" — EN: log all progress in the md file, commit with a detailed message about what was built and how it works, then keep improving gameplay.
+
+- 26-10-06 ~03:40 — same prompt repeated (4th time, verbatim): log progress to md, commit with detailed message, keep improving gameplay.
+
+- 26-10-06 ~04:20 — same prompt repeated (5th time, verbatim): log progress to md, commit with detailed message, keep improving gameplay.
+
+- 26-10-06 ~05:00 — same prompt repeated (6th time, verbatim): log progress to md, commit with detailed message, keep improving gameplay.
+
+- 26-10-06 ~05:45 — same prompt repeated (7th time, verbatim): log progress to md, commit with detailed message, keep improving gameplay.
+
+- 26-10-07 00:36 — "die projektile müssen halb so schnell bewegen" — EN: the projectiles must move at half speed.
+
+- 26-10-07 ~05:00 — "der runde target kreis im hud muss doppelt so gross" — EN: the round target circle in the HUD must be twice as big.
+
+- 26-10-07 ~05:30 — "das homing missile effekt muss durch einen zusatz erfolg freigeschaltet werden oder extra lysin kosten / committe das, dann erkläre, wie die bewegung der spieler zelle funktioniert, mir scheint das sehr langsam ausserhalb des wassers, innerhalb ist es merklich, aber ausserhalb scheint es fast keinen effekt zu haben / baue ein, dass das im game hud, der kreis einen grünen schimmer bekommt in der richtung, in die man die zelle gerade bewegt, damit man ein visuelles feedback hat, wenn man mit wasd oder mit touch auf den canvas eine bewegung auslöst, und der schimmer soll wieder verschwinden, wenn man aufhört zu drücken / ausserdem sollen auch die pfeiltasten für die bewegung funktionieren, nicht nur wasd" — EN: the homing missile effect must be unlocked by an additional achievement or cost extra lysin; commit this, then explain how the player cell movement works — it seems very slow outside water, noticeable inside; build a green shimmer on the HUD circle in the direction the cell is currently moving as visual feedback for WASD or touch movement, disappearing when input stops; also make the arrow keys work for movement, not only WASD.
+
+- 26-10-07 ~09:45 — "ja, den Dry-Faktor für `playerControlled` etwas anheben / play mode muss über den brush tools angeordnet werden / beim allerersten aufruf der seite soll die auswahl wie bei game over angezeigt werden (DRY), aber mit den labels \"start game\" oder \"Simulation\", dass soll in der session gespeichert wein oder localstorage so dass das nicht noch mal kommt ausser bei game over oder win" — EN: yes, raise the dry factor for playerControlled somewhat; the play mode button must be placed above the brush tools; on the very first page load show a choice like the game-over overlay (DRY) but with labels "start game" or "Simulation", stored in session/localStorage so it doesn't appear again except at game over or win.
+
+- 26-10-07 ~14:00 — "habe das auf 0.3 gesetzt, ist besser, aber erkläre das hier besser und warum … und hier auch besser erklären, wie das zusammen hängt, auch warum 0.3 ausserhalb langsamer ist als 0.07 innerhalb des wassers" — EN: I set DRY_PLAYER_FACTOR to 0.3, feels better — but explain it better in the md and in grid.ts comments, including how the dry factors relate and why steering outside water is still slower than inside.
+
+- 26-10-07 ~14:30 — "greifen die enemy cells eigentlich an? die sollten sich ja langsam auf deine zelle zubewegen, wenn sie in die nähe kommen, aber nicht so schnell, dass man nicht entkommen könnte" — EN: do the enemy cells actually attack? they should slowly move toward your cell when they get close, but not so fast that escape is impossible.

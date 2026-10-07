@@ -10,6 +10,8 @@ module.exports = defineConfig({
     headless: true,
     screenshot: 'on',
     trace: 'on-first-retry',
+    // Pre-seed the first-visit intro flag so specs see the plain app.
+    storageState: 'storage-state.json',
     launchOptions: {
       executablePath: '/home/ruben/.playwright-browsers/chromium-1217/chrome-linux64/chrome',
       args: ['--no-sandbox'],

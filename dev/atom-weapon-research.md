@@ -400,6 +400,33 @@ almost unsteerable and puddles feel normal. If the game arena should
 be fair regardless of water, the dry factor for `playerControlled`
 atoms could be raised — a design choice, not a bug.
 
+## Iteration 14 — dry steering relief, panel order, first-visit intro
+
+- **Dry steering:** the player kick got its own
+  `DRY_PLAYER_FACTOR = 0.3` instead of sharing the ambient
+  `DRY_THERMAL_FACTOR = 0.07`. Both factors only apply OUTSIDE a water
+  droplet — inside water every kick is always full strength (×1.0), so
+  the honest comparison for the player is dry 0.3 vs wet 1.0: steering
+  on dry ground is now ~4× stronger than the old 0.07 yet still ~3×
+  slower than swimming, keeping puddles tactically valuable. The 0.07
+  ambient factor never touches the player anymore — it only calms soup
+  jitter on dry land. Hand-tuned: 0.5 felt nearly wet-fast; 0.3 keeps
+  dry ground honest while clearly responsive.
+- **Panel order:** the Play Mode card moved above the Brushes card and
+  is `always-visible` — game mode is the primary action, not a
+  collapsed extra on mobile.
+- **First-visit intro (DRY):** the game-over overlay doubles as a
+  start choice — `overlayShownStatus = 3` swaps title/sub and relabels
+  the same two buttons (`▶ start game`, `🧬 simulation`). `blocking`
+  makes it a real modal; clicking the dim backdrop equals "simulation"
+  (standard click-outside dismiss), Enter starts the game. The choice
+  persists in `localStorage` (`evoloom-intro-v1`) — the overlay only
+  reappears at game over/win. `restartMatch`/`toggleGame` handlers are
+  context-aware on the shared buttons.
+- **Spec isolation:** `dev/playwright/storage-state.json` pre-seeds the
+  intro flag via `storageState` in the config — specs and CI never see
+  the modal.
+
 ## Test plan
 
 - Playwright: enter game mode → dispatch fire → assert projectile atoms

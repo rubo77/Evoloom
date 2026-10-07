@@ -450,6 +450,9 @@
       text-align: center;
       border-radius: 6px;
     }
+    /* First-visit intro reuses this overlay as a real modal — the
+       canvas stays reachable behind the end-of-match variant. */
+    #game-overlay.blocking { pointer-events: auto; }
     #game-overlay-title {
       font-family: var(--font-sans);
       font-weight: 200;
@@ -2018,6 +2021,14 @@
       </div>
     </div>
 
+    <!-- PLAY MODE — distinct alive-green card -->
+    <div class="card card--game always-visible">
+      <div class="card__label">Play Mode</div>
+      <div class="card__row">
+        <button id="game-btn" data-help="Play mode — steer your green microbe with WASD or arrow keys">🦠 Steer a microbe<span class="kbd-badge">G</span></button>
+      </div>
+    </div>
+
     <!-- BRUSHES — primary tools, always visible on mobile -->
     <div class="card card--brushes always-visible">
       <div class="card__label">Brushes · Tools</div>
@@ -2063,14 +2074,6 @@
         <span class="ctl-label">🎲 seed</span>
         <input id="seed-input" type="number" value="1" min="0" step="1">
         <button id="seed-apply-btn" data-help="Restart the world with this RNG seed">Reseed</button>
-      </div>
-    </div>
-
-    <!-- PLAY MODE — distinct alive-green card -->
-    <div class="card card--game">
-      <div class="card__label">Play Mode</div>
-      <div class="card__row">
-        <button id="game-btn" data-help="Play mode — steer your green microbe with WASD or arrow keys">🦠 Steer a microbe<span class="kbd-badge">G</span></button>
       </div>
     </div>
 

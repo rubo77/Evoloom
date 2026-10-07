@@ -1160,11 +1160,18 @@ applyHudVisibility();
 const overlayEl = document.getElementById('game-overlay') as HTMLDivElement;
 const overlayTitle = document.getElementById('game-overlay-title') as HTMLDivElement;
 const overlaySub   = document.getElementById('game-overlay-sub')   as HTMLDivElement;
+const gameAgainBtn = document.getElementById('game-again') as HTMLButtonElement;
+const gameExitBtn  = document.getElementById('game-exit')  as HTMLButtonElement;
+// overlayShownStatus: 0 hidden, 1 won, 2 lost, 3 first-visit intro.
 let overlayShownStatus = 0;
+const INTRO_SEEN_KEY = 'evoloom-intro-v1';
 
 function showGameOverlay(status: number): void {
   if (overlayShownStatus === status) return;
   overlayShownStatus = status;
+  overlayEl.classList.remove('blocking');
+  gameAgainBtn.innerHTML = '↻ play again <kbd>↵</kbd>';
+  gameExitBtn.textContent = '✕ sandbox';
   if (status === 1) {
     overlayTitle.textContent = '🏆 You won';
     overlayTitle.style.color = '#5edca0';
@@ -1178,7 +1185,30 @@ function showGameOverlay(status: number): void {
 }
 function hideGameOverlay(): void {
   overlayShownStatus = 0;
+  overlayEl.classList.remove('blocking');
   overlayEl.style.display = 'none';
+}
+
+// First-visit intro — same overlay shell as game over, but a modal
+// choice between jumping into play mode or exploring the sandbox.
+// localStorage remembers the visit; only the win/lose states reuse
+// the overlay afterwards.
+function showIntroOverlay(): void {
+  overlayShownStatus = 3;
+  overlayEl.classList.add('blocking');
+  overlayTitle.textContent = 'EVOLOOM';
+  overlayTitle.style.color = '#d4a64f';
+  overlaySub.textContent = 'An artificial chemistry — steer a living cell against the swarm, or just watch the soup evolve.';
+  gameAgainBtn.textContent = '▶ start game';
+  gameExitBtn.textContent = '🧬 simulation';
+  overlayEl.style.display = 'flex';
+}
+function dismissIntro(): void {
+  try { localStorage.setItem(INTRO_SEEN_KEY, '1'); } catch { /* private mode — intro returns next visit */ }
+  hideGameOverlay();
+}
+function introSeen(): boolean {
+  try { return localStorage.getItem(INTRO_SEEN_KEY) === '1'; } catch { return true; }
 }
 
 // End-of-match actions — the overlay blocks nothing else, so the only
@@ -1190,8 +1220,19 @@ function restartMatch(): void {
   armFollowOnSelection = true;
   hideGameOverlay();
 }
-document.getElementById('game-again')?.addEventListener('click', restartMatch);
-document.getElementById('game-exit')?.addEventListener('click', () => { if (gameMode) toggleGame(); });
+gameAgainBtn?.addEventListener('click', () => {
+  if (overlayShownStatus === 3) { dismissIntro(); if (!gameMode) toggleGame(); }
+  else restartMatch();
+});
+gameExitBtn?.addEventListener('click', () => {
+  if (overlayShownStatus === 3) { dismissIntro(); return; }
+  if (gameMode) toggleGame();
+});
+// Clicking the dimmed backdrop of the intro equals choosing the
+// sandbox — standard click-outside-dismiss for a modal choice.
+overlayEl?.addEventListener('click', (e) => {
+  if (overlayShownStatus === 3 && e.target === overlayEl) dismissIntro();
+});
 
 // ── WASD/arrow input → biased Brownian. We track which of the eight
 // steering keys are down and send a normalized direction vector to the
@@ -3203,6 +3244,13 @@ document.addEventListener('keydown', (e) => {
     pushPlayerInput();
     return;
   }
+  // Enter on the first-visit intro means "start game".
+  if (e.code === 'Enter' && overlayShownStatus === 3) {
+    e.preventDefault();
+    dismissIntro();
+    if (!gameMode) toggleGame();
+    return;
+  }
   // Enter on the end-of-match overlay restarts immediately — the
   // overlay's ↻ button advertises the same shortcut.
   if (gameMode && e.code === 'Enter' && overlayShownStatus !== 0) {
@@ -3552,3 +3600,6 @@ function drawSelectionHalo(snap: SnapshotMsg): void {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
 }
 requestAnimationFrame(loop);
+// First visit only — the intro offers play mode vs. sandbox up front;
+// afterwards the overlay is reserved for match end states.
+if (!introSeen()) showIntroOverlay();

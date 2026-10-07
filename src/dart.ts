@@ -26,9 +26,11 @@ const DART_HOMING_BLEND           = 0.10;  // thrust vector pull per tick
 const DART_FUSE_TICKS             = 12;    // burrow time after membrane contact —
                                            // ~14 u at cruise, past the rim, so the
                                            // lysin burst lands inside the ring
-const DART_SPAWN_CLEARANCE        = 4;     // × RADIUS beyond the player ring —
-                                           // > REACTION_RANGE (2.5) so the shot
-                                           // can never dissolve the firing cell
+const DART_SPAWN_CLEARANCE        = 4.5;   // × RADIUS beyond the outermost player
+                                           // atom on the fire axis — the cluster's
+                                           // innermost satellite (1.6R behind the
+                                           // core) still clears REACTION_RANGE (2.5R),
+                                           // so the shot can't dissolve its own ring
 
 // Build and arm a dart launched from just outside a membrane ring at
 // (cx,cy) with outer radius ringRadius, flying along (ux,uy). Returns

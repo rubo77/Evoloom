@@ -1,17 +1,14 @@
-const { chromium } = require('playwright');
+// Probe: dump fire-pad internals (cooldown var, rim tick transforms)
+// for debugging aim/bearing rendering.
+// Run: NODE_PATH=node_modules node pad-debug.cjs  (app on :9131)
+const { launchBrowser, newProbePage, openApp, startGame } = require('./helpers.cjs');
+
 (async () => {
-  const browser = await chromium.launch({
-    executablePath: '/home/ruben/.playwright-browsers/chromium-1217/chrome-linux64/chrome',
-    args: ['--no-sandbox'],
-  });
-  const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
+  const browser = await launchBrowser();
+  const { page } = await newProbePage(browser);
   page.on('console', (m) => { if (m.text().includes('nearest enemy')) console.log('  ' + m.text()); });
-  await page.goto('http://localhost:9131/');
-  await page.waitForSelector('#canvas', { timeout: 15000 });
-  await page.waitForTimeout(2500);
-  await page.click('#menu-toggle');
-  await page.click('#game-btn');
-  await page.waitForSelector('#fire-pad.shown', { timeout: 10000 });
+  await openApp(page);
+  await startGame(page);
   for (let i = 0; i < 6; i++) {
     await page.waitForTimeout(1500);
     const s = await page.evaluate(() => ({

@@ -5,8 +5,8 @@
 // Needs the app served on :9131 (bash run.sh or python3 -m http.server 9131 from repo root)
 
 const { test, expect } = require('@playwright/test');
+const { openApp, collectErrors } = require('./helpers.cjs');
 
-const BASE = 'http://localhost:9131/';
 const title = (page) => page.locator('.tutorial-title');
 
 async function expectStep(page, text) {
@@ -14,13 +14,8 @@ async function expectStep(page, text) {
 }
 
 test('guided tutorial gates task steps on real user actions', async ({ page }) => {
-  const errors = [];
-  page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
-  page.on('pageerror', (e) => errors.push(String(e)));
-
-  await page.goto(BASE);
-  await page.waitForSelector('#canvas', { timeout: 15000 });
-  await page.waitForTimeout(2500);
+  const errors = collectErrors(page);
+  await openApp(page);
 
   await page.click('#tutorial-btn');
   await expect(page.locator('#tutorial-card')).toBeVisible();
@@ -108,8 +103,7 @@ test('guided tutorial gates task steps on real user actions', async ({ page }) =
 });
 
 test('Esc leaves the tutorial midway', async ({ page }) => {
-  await page.goto(BASE);
-  await page.waitForSelector('#canvas', { timeout: 15000 });
+  await openApp(page, { settle: 0 });
   await page.click('#tutorial-btn');
   await page.click('#tut-next');
   await page.keyboard.press('Escape');

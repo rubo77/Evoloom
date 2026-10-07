@@ -447,6 +447,21 @@ export function draw2D(
     }
   }
 
+  // ── Dart tracers — propelled lysin atoms (flag bit5) glow bright gold
+  // with a white rim so the player's shots read clearly mid-flight ────
+  ctx.fillStyle = 'rgba(255, 200, 60, 0.95)';
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  for (let i = 0; i < atomCount; i++) {
+    if (!((atoms[i * STRIDE + 3] | 0) & 32)) continue;
+    const px = _displayX[i] * scale, py = _displayY[i] * scale;
+    ctx.moveTo(px + r * 1.3, py);
+    ctx.arc(px, py, r * 1.3, 0, Math.PI * 2);
+  }
+  ctx.fill();
+  ctx.stroke();
+
   // ── Build inLoop bit-vector so we don't redraw closed-loop membrane bonds ─
   const inLoop = new Uint8Array(atomCount);
   {
@@ -860,6 +875,11 @@ export type GameHudStats = {
   loseIters: number;     // iterations until death (0 while a player loop lives)
   itersPerSec: number;   // current effective iteration rate from the worker
   gameStatus: number;    // 0 playing, 1 won, 2 lost
+  fireIters: number;     // iterations until the lysin dart can fire (0 = ready)
+  dartCount: number;     // dart atoms still under thrust
+  ammo: number;          // lysin atoms banked for darts (5 per shot)
+  homingOn: boolean;     // terminal guidance earned (first confirmed hit)
+  damageFlash: number;   // 0..1 — intensity of the just-bitten screen flash
 };
 
 const HUD_GOOD = '#5edca0';
@@ -902,22 +922,46 @@ export function drawGameHUD2D(ctx: CanvasRenderingContext2D, atoms: Float32Array
     status = `victory in ${(stats.winIters / Math.max(1, stats.itersPerSec)).toFixed(1)}s`;
     statusColor = HUD_GOOD;
   }
+  // Lysin dart state — reload countdown, magazine and in-flight atoms.
+  // 'unguided' marks darts that still fly straight: terminal guidance
+  // unlocks on the first confirmed hit (worker-side flag).
+  const guide = stats.homingOn ? ' · homing' : ' · unguided';
+  const dartText = stats.ammo < 5 ? `dart: no lysin (${stats.ammo})`
+    : stats.fireIters > 0
+    ? `dart: ${(stats.fireIters / Math.max(1, stats.itersPerSec)).toFixed(1)}s · ammo ${stats.ammo}${guide}`
+    : `dart: READY · ammo ${stats.ammo}${guide}`;
+  const line4 = stats.dartCount > 0 ? `${dartText} · ${stats.dartCount} out` : dartText;
+  const dartColor = stats.ammo < 5 ? HUD_BAD
+    : stats.fireIters > 0 ? HUD_WARN : HUD_GOOD;
   const textX = hudTextX(ctx);
   const textW = Math.max(
     ctx.measureText(line1).width,
     ctx.measureText(line2).width,
     ctx.measureText(line3).width,
+    ctx.measureText(line4).width,
     ctx.measureText(status).width);
-  drawHudBox(ctx, textX, textW, 74);
+  drawHudBox(ctx, textX, textW, 90);
   const ty = HUD_STATS_RECT.y + 16;
   ctx.fillStyle = '#ffffff';
   ctx.fillText(line1, textX, ty);
   ctx.fillText(line2, textX, ty + 16);
   ctx.fillStyle = membraneColor;
   ctx.fillText(line3, textX, ty + 32);
+  ctx.fillStyle = dartColor;
+  ctx.fillText(line4, textX, ty + 48);
   ctx.fillStyle = statusColor;
-  ctx.fillText(status, textX, ty + 48);
-  drawHudLegend(ctx);
+  ctx.fillText(status, textX, ty + 64);
+  // Damage flash — a decaying red vignette on every enemy bite.
+  if (stats.damageFlash > 0) {
+    const w = ctx.canvas.width, h = ctx.canvas.height;
+    const g = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.35, w / 2, h / 2, Math.max(w, h) * 0.75);
+    g.addColorStop(0, 'rgba(255,60,60,0)');
+    g.addColorStop(1, `rgba(255,60,60,${(0.45 * stats.damageFlash).toFixed(3)})`);
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, w, h);
+  }
+  // The sandbox legend is replaced in game mode by the fire pad
+  // (#fire-pad DOM element), so no drawHudLegend() call here.
   ctx.restore();
 }
 

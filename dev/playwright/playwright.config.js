@@ -10,6 +10,8 @@ module.exports = defineConfig({
     headless: true,
     screenshot: 'on',
     trace: 'on-first-retry',
+    // Pre-seed the first-visit intro flag so specs see the plain app.
+    storageState: 'storage-state.json',
     launchOptions: {
       args: ['--no-sandbox'],
     },

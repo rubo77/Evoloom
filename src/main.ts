@@ -19,7 +19,7 @@
 // always shows the version that was actually bundled.
 declare const APP_VERSION: string;
 
-import { ControlMsg, SnapshotMsg, BurnProgressMsg, BurnDoneMsg, SaveStateMsg, LoadResultMsg, EventLogChunkMsg, SelectionExportMsg, SelectionState, CustomAtomDef, CustomRuleSpec, SaveState, STRIDE } from './snapshot';
+import { ControlMsg, SnapshotMsg, BurnProgressMsg, BurnDoneMsg, SaveStateMsg, LoadResultMsg, EventLogChunkMsg, SelectionExportMsg, FireRejectedMsg, PlayerHitMsg, DartHitMsg, SelectionState, CustomAtomDef, CustomRuleSpec, SaveState, STRIDE } from './snapshot';
 import { setCustomAtomColor as setGPUCustomColor } from './renderer-gpu';
 import { setClassicAtomColor, setEducationalAtomColor } from './renderer-2d';
 import { draw2D, draw2DClassic, drawHUD2D, drawGameHUD2D, drawArenaBorder, HUD_STATS_RECT } from './renderer-2d';
@@ -563,7 +563,7 @@ function sendTransfer(msg: ControlMsg, transferables: Transferable[]): void {
 // caused a deadlock when the worker only had 2 buffers in its pool).
 let lastSnapshot: SnapshotMsg | null = null;
 
-type WorkerMsg = SnapshotMsg | BurnProgressMsg | BurnDoneMsg | SaveStateMsg | LoadResultMsg | EventLogChunkMsg | SelectionExportMsg;
+type WorkerMsg = SnapshotMsg | BurnProgressMsg | BurnDoneMsg | SaveStateMsg | LoadResultMsg | EventLogChunkMsg | SelectionExportMsg | FireRejectedMsg | PlayerHitMsg | DartHitMsg;
 
 worker.onmessage = (e: MessageEvent<WorkerMsg>) => {
   const data = e.data;
@@ -584,6 +584,27 @@ worker.onmessage = (e: MessageEvent<WorkerMsg>) => {
   if (data.type === 'loadResult')   { onLoadResult(data);   return; }
   if (data.type === 'eventLogChunk'){ onEventLogChunk(data); return; }
   if (data.type === 'selectionExport') { onSelectionExport(data); return; }
+  if (data.type === 'fireRejected') {
+    // The worker is the authority on both gates — a stale mirrored
+    // cooldown or magazine can let a press through that still needs
+    // a visible explanation.
+    logStatus(data.reason === 'cooldown' ? 'Reloading…' : 'Out of lysin — fly through orange p-atoms to rearm');
+    return;
+  }
+  if (data.type === 'playerHit') {
+    lastBiteAt = performance.now();
+    // Bites can land in bursts during a sustained hug — the red flash
+    // fires every time, the status line only every couple of seconds.
+    if (performance.now() - lastBiteStatusAt > 2000) {
+      lastBiteStatusAt = performance.now();
+      logStatus('⚠ membrane breached — break contact!');
+    }
+    return;
+  }
+  if (data.type === 'dartHit') {
+    logStatus('☄ direct hit — lysin cloud released');
+    return;
+  }
 };
 
 // ── State (UI-only) ─────────────────────────────────────────────────────────
@@ -1011,6 +1032,11 @@ function applyGameModeUI(): void {
   hydroBtn.classList.toggle('active', !gameMode && hydroOn);
   hydroSlidersRow.classList.toggle('shown', !gameMode && hydroOn);
   hydroBtn.disabled = gameMode;
+  // Lysin dart fire pad replaces the top-left legend while a match runs.
+  firePad?.classList.toggle('shown', gameMode);
+  // On touch layouts the control panel opens as a modal over a backdrop
+  // that would cover the fire pad — dismiss it when a match starts.
+  if (gameMode && panelBackdrop?.classList.contains('shown')) closePanel();
   hideGameOverlay();
 }
 
@@ -1038,6 +1064,7 @@ function toggleGame(): void {
     return;
   }
   gameMode = true;
+  matchStartAt = performance.now();
   gameBtn.textContent = '🦠 Exit game';
   gameBtn.classList.add('active');
   send({ type: 'startGame' });
@@ -1046,6 +1073,43 @@ function toggleGame(): void {
   armFollowOnSelection = true;
   applyGameModeUI();
   logStatus('Play mode ON — press & hold on the canvas to steer your microbe (WASD works too)');
+}
+
+// ── Lysin dart fire pad ─────────────────────────────────────────────
+// Game-mode replacement for the legend block: the press position vs.
+// the pad's center is the launch direction, so it works identically on
+// mouse and touch. The needle marks the aim; the conic --cd sweep shows
+// reload, drained each frame from the worker's snapshot fields.
+const firePad = document.getElementById('fire-pad') as HTMLElement | null;
+const fireNeedle = document.getElementById('fire-needle') as HTMLElement | null;
+const fireEnemy = document.getElementById('fire-enemy') as HTMLElement | null;
+const fireLysin = document.getElementById('fire-lysin') as HTMLElement | null;
+let lastFireCooldownIter = 0; // worker-side reload, mirrored per snapshot
+let minEnemyCount = -1; // lowest enemy loop count seen this match (-1 outside a match)
+let homingSeen = false; // snapshot mirror of the worker's guidance unlock — rising edge logs once per match
+let matchStartAt = -1e9; // performance.now() of match start — suppresses the kill-feed during loop-detection warmup
+let lastBiteAt = -1e9;        // performance.now() of the last enemy bite (drives the damage flash)
+let lastBiteStatusAt = -1e9;  // throttles the 'membrane breached' status text
+
+if (firePad) {
+  firePad.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    const r = firePad.getBoundingClientRect();
+    const dx = e.clientX - (r.left + r.width / 2);
+    const dy = e.clientY - (r.top + r.height / 2);
+    const mag = Math.hypot(dx, dy);
+    if (mag < 4) return; // dead center — no direction to launch along
+    // The needle turns to the aim regardless of reload — it doubles as
+    // the last-shot marker. 0deg is straight up, so offset by 90°.
+    const deg = Math.atan2(dy, dx) * 180 / Math.PI + 90;
+    if (fireNeedle) fireNeedle.style.transform = `rotate(${deg}deg)`;
+    // The mirrored magazine is a fast-path hint only — when it is stale
+    // the 'fire' message still reaches the worker, which answers a real
+    // shortage with 'fireRejected' and the status line explains it.
+    if (lastFireCooldownIter > 0) return; // still reloading
+    send({ type: 'fire', x: dx, y: dy });
+    console.log(`[FIRE] dart requested dir(${(dx / mag).toFixed(2)},${(dy / mag).toFixed(2)})`);
+  });
 }
 
 // ── HUD hide/show ─────────────────────────────────────────────────────────
@@ -1096,11 +1160,18 @@ applyHudVisibility();
 const overlayEl = document.getElementById('game-overlay') as HTMLDivElement;
 const overlayTitle = document.getElementById('game-overlay-title') as HTMLDivElement;
 const overlaySub   = document.getElementById('game-overlay-sub')   as HTMLDivElement;
+const gameAgainBtn = document.getElementById('game-again') as HTMLButtonElement;
+const gameExitBtn  = document.getElementById('game-exit')  as HTMLButtonElement;
+// overlayShownStatus: 0 hidden, 1 won, 2 lost, 3 first-visit intro.
 let overlayShownStatus = 0;
+const INTRO_SEEN_KEY = 'evoloom-intro-v1';
 
 function showGameOverlay(status: number): void {
   if (overlayShownStatus === status) return;
   overlayShownStatus = status;
+  overlayEl.classList.remove('blocking');
+  gameAgainBtn.innerHTML = '↻ play again <kbd>↵</kbd>';
+  gameExitBtn.textContent = '✕ sandbox';
   if (status === 1) {
     overlayTitle.textContent = '🏆 You won';
     overlayTitle.style.color = '#5edca0';
@@ -1114,12 +1185,67 @@ function showGameOverlay(status: number): void {
 }
 function hideGameOverlay(): void {
   overlayShownStatus = 0;
+  overlayEl.classList.remove('blocking');
   overlayEl.style.display = 'none';
 }
 
-// ── WASD input → biased Brownian. We track which of W/A/S/D are down and
-// send a normalized direction vector to the worker whenever the set changes.
+// First-visit intro — same overlay shell as game over, but a modal
+// choice between jumping into play mode or exploring the sandbox.
+// localStorage remembers the visit; only the win/lose states reuse
+// the overlay afterwards.
+function showIntroOverlay(): void {
+  overlayShownStatus = 3;
+  overlayEl.classList.add('blocking');
+  overlayTitle.textContent = 'EVOLOOM';
+  overlayTitle.style.color = '#d4a64f';
+  overlaySub.textContent = 'An artificial chemistry — steer a living cell against the swarm, or just watch the soup evolve.';
+  gameAgainBtn.textContent = '▶ start game';
+  gameExitBtn.textContent = '🧬 simulation';
+  overlayEl.style.display = 'flex';
+}
+function dismissIntro(): void {
+  try { localStorage.setItem(INTRO_SEEN_KEY, '1'); } catch { /* private mode — intro returns next visit */ }
+  hideGameOverlay();
+}
+function introSeen(): boolean {
+  try { return localStorage.getItem(INTRO_SEEN_KEY) === '1'; } catch { return true; }
+}
+
+// End-of-match actions — the overlay blocks nothing else, so the only
+// way forward used to be the G shortcut. "again" re-runs the same
+// worker start path as the first match; "sandbox" is the normal exit.
+function restartMatch(): void {
+  matchStartAt = performance.now();
+  send({ type: 'startGame' });
+  armFollowOnSelection = true;
+  hideGameOverlay();
+}
+gameAgainBtn?.addEventListener('click', () => {
+  if (overlayShownStatus === 3) { dismissIntro(); if (!gameMode) toggleGame(); }
+  else restartMatch();
+});
+gameExitBtn?.addEventListener('click', () => {
+  if (overlayShownStatus === 3) { dismissIntro(); return; }
+  if (gameMode) toggleGame();
+});
+// Clicking the dimmed backdrop of the intro equals choosing the
+// sandbox — standard click-outside-dismiss for a modal choice.
+overlayEl?.addEventListener('click', (e) => {
+  if (overlayShownStatus === 3 && e.target === overlayEl) dismissIntro();
+});
+
+// ── WASD/arrow input → biased Brownian. We track which of the eight
+// steering keys are down and send a normalized direction vector to the
+// worker whenever the set changes.
 const keyState = { w: false, a: false, s: false, d: false };
+// Arrow keys share the WASD state flags — four direction slots, not
+// eight, so W+ArrowUp still read as one held "up".
+const MOVE_KEYS: Record<string, 'w' | 'a' | 's' | 'd'> = {
+  KeyW: 'w', ArrowUp: 'w',
+  KeyA: 'a', ArrowLeft: 'a',
+  KeyS: 's', ArrowDown: 's',
+  KeyD: 'd', ArrowRight: 'd',
+};
 
 // Press-to-steer (game mode, no tool selected): while the pointer is held
 // on the canvas, the microbe swims toward the pointer's world position.
@@ -1160,6 +1286,7 @@ function pushSteerInput(): void {
     steerLastX = dx; steerLastY = dy;
     send({ type: 'setPlayerInput', x: dx, y: dy });
   }
+  setMoveGlow(dx, dy);
 }
 
 function endSteer(): void {
@@ -1180,6 +1307,17 @@ function pushPlayerInput(): void {
   const len = Math.sqrt(dx * dx + dy * dy);
   if (len > 0) { dx /= len; dy /= len; }
   send({ type: 'setPlayerInput', x: dx, y: dy });
+  setMoveGlow(dx, dy);
+}
+
+// Movement shimmer — a green wedge on the fire pad rim rotated to the
+// live steering direction (same convention as the needle: 0deg = up).
+// Instant feedback for key/hold input, gone the moment input stops.
+function setMoveGlow(dx: number, dy: number): void {
+  if (!firePad) return;
+  if (dx === 0 && dy === 0) { firePad.classList.remove('moving'); return; }
+  firePad.classList.add('moving');
+  firePad.style.setProperty('--mdeg', `${(Math.atan2(dy, dx) * 180 / Math.PI + 90).toFixed(1)}deg`);
 }
 
 // ── Recording ───────────────────────────────────────────────────────────────
@@ -3097,13 +3235,27 @@ document.addEventListener('keydown', (e) => {
   const isShortcutKey = /^Key[A-Z]$|^Comma$|^Period$/.test(e.code);
   if (isTyping && isShortcutKey) return;
 
-  // In game mode, WASD is reserved for the player. We still allow other shortcuts.
-  if (gameMode && (e.code === 'KeyW' || e.code === 'KeyA' || e.code === 'KeyS' || e.code === 'KeyD')) {
-    if (e.code === 'KeyW') keyState.w = true;
-    if (e.code === 'KeyA') keyState.a = true;
-    if (e.code === 'KeyS') keyState.s = true;
-    if (e.code === 'KeyD') keyState.d = true;
+  // In game mode, WASD/arrows are reserved for the player — arrows would
+  // otherwise scroll the page. Other shortcuts stay live.
+  const moveKey = MOVE_KEYS[e.code];
+  if (gameMode && moveKey) {
+    e.preventDefault();
+    keyState[moveKey] = true;
     pushPlayerInput();
+    return;
+  }
+  // Enter on the first-visit intro means "start game".
+  if (e.code === 'Enter' && overlayShownStatus === 3) {
+    e.preventDefault();
+    dismissIntro();
+    if (!gameMode) toggleGame();
+    return;
+  }
+  // Enter on the end-of-match overlay restarts immediately — the
+  // overlay's ↻ button advertises the same shortcut.
+  if (gameMode && e.code === 'Enter' && overlayShownStatus !== 0) {
+    e.preventDefault();
+    restartMatch();
     return;
   }
   // Esc: pending bond → lab → inspector → panel → reset brush.
@@ -3145,10 +3297,8 @@ document.addEventListener('keydown', (e) => {
 });
 document.addEventListener('keyup', (e) => {
   if (!gameMode) return;
-  if (e.code === 'KeyW') { keyState.w = false; pushPlayerInput(); }
-  if (e.code === 'KeyA') { keyState.a = false; pushPlayerInput(); }
-  if (e.code === 'KeyS') { keyState.s = false; pushPlayerInput(); }
-  if (e.code === 'KeyD') { keyState.d = false; pushPlayerInput(); }
+  const moveKey = MOVE_KEYS[e.code];
+  if (moveKey) { keyState[moveKey] = false; pushPlayerInput(); }
 });
 
 // ── Interactive tutorial ────────────────────────────────────────────────────
@@ -3218,6 +3368,11 @@ function drawHud(ctx: CanvasRenderingContext2D, snap: SnapshotMsg): void {
       winIters: snap.winCountdownIter,
       loseIters: snap.loseCountdownIter,
       gameStatus: snap.gameStatus,
+      fireIters: snap.fireCooldownIter,
+      dartCount: snap.projectileCount,
+      ammo: snap.lysinAmmo,
+      homingOn: snap.homingOn,
+      damageFlash: Math.max(0, 1 - (performance.now() - lastBiteAt) / 400),
     });
   } else {
     drawHUD2D(ctx, snap.iterations, snap.atomCount, snap.atoms);
@@ -3244,6 +3399,61 @@ function loop(): void {
     if (gameMode) {
       if (snap.gameStatus === 1 || snap.gameStatus === 2) showGameOverlay(snap.gameStatus);
       else hideGameOverlay();
+      // Dart reload mirror for the fire pad — updated unconditionally
+      // (drawHud only runs in educational view with the HUD visible).
+      lastFireCooldownIter = snap.fireCooldownIter;
+      firePad?.style.setProperty('--cd', snap.fireCooldownFrac.toFixed(3));
+      firePad?.classList.toggle('empty', snap.lysinAmmo < 5);
+      // Homing unlock — rising edge only; a fresh match clears the flag
+      // worker-side, which resets this mirror automatically.
+      if (snap.homingOn && !homingSeen) {
+        logStatus('◎ homing guidance online — darts now curve toward enemies');
+      }
+      homingSeen = snap.homingOn;
+      // Enemy bearing tick — same angle convention as the aim needle
+      // (0deg = up), so a press aligned with the tick fires at the
+      // nearest enemy.
+      if (fireEnemy) {
+        if (snap.enemyDist > 0) {
+          fireEnemy.classList.add('shown');
+          fireEnemy.dataset.dist = snap.enemyDist.toFixed(0);
+          // Proximity pulse — the tick blinks faster as the threat closes.
+          fireEnemy.classList.toggle('close', snap.enemyDist < 220);
+          const deg = Math.atan2(snap.enemyDirY, snap.enemyDirX) * 180 / Math.PI + 90;
+          fireEnemy.style.transform = `rotate(${deg}deg)`;
+        } else {
+          fireEnemy.classList.remove('shown', 'close');
+          delete fireEnemy.dataset.dist;
+        }
+      }
+      if (fireLysin) {
+        if (snap.lysinDist > 0) {
+          fireLysin.classList.add('shown');
+          const deg = Math.atan2(snap.lysinDirY, snap.lysinDirX) * 180 / Math.PI + 90;
+          fireLysin.style.transform = `rotate(${deg}deg)`;
+        } else {
+          fireLysin.classList.remove('shown');
+        }
+      }
+      // Kill feed — enemies replicate mid-match, so only a drop below
+      // the running minimum counts as a real loss; a bounce back down
+      // after a division is not a kill. Loop detection flickers during
+      // the first seconds of a match (a spawning cell can count as an
+      // extra loop for a frame), so the feed stays silent until the
+      // detector has settled.
+      if (snap.gameStatus === 0) {
+        if (performance.now() - matchStartAt > 2500) {
+          if (minEnemyCount < 0) minEnemyCount = snap.enemyCount;
+          else if (snap.enemyCount < minEnemyCount) {
+            minEnemyCount = snap.enemyCount;
+            logStatus(`☠ Enemy down — ${snap.enemyCount} left`);
+          }
+        }
+      } else {
+        minEnemyCount = -1; // match ended — the next one seeds fresh
+      }
+    } else if (minEnemyCount !== -1) {
+      minEnemyCount = -1;
     }
     if (viewMode === 'classic') {
       // Classic mode renders entirely onto the overlay canvas (which always
@@ -3390,3 +3600,6 @@ function drawSelectionHalo(snap: SnapshotMsg): void {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
 }
 requestAnimationFrame(loop);
+// First visit only — the intro offers play mode vs. sandbox up front;
+// afterwards the overlay is reserved for match end states.
+if (!introSeen()) showIntroOverlay();

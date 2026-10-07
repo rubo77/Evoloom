@@ -403,6 +403,23 @@
       display: none;
     }
     #fire-lysin.shown { display: block; }
+    /* Movement shimmer — a soft green wedge rotated to the live
+       steering input (WASD/arrows or canvas hold), so pressing a key
+       gives instant feedback before the cell visibly reacts. --mdeg
+       uses the needle convention (0deg = straight up). */
+    #fire-move {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background: conic-gradient(from -30deg,
+        transparent 0deg,
+        rgba(94, 220, 160, 0.5) 30deg,
+        transparent 60deg);
+      transform: rotate(var(--mdeg, 0deg));
+      pointer-events: none;
+      display: none;
+    }
+    #fire-pad.moving #fire-move { display: block; }
     #fire-pad::after {
       content: '';
       position: absolute;
@@ -1749,7 +1766,7 @@
       <button id="tutorial-btn" class="canvas-tool-btn" aria-label="Interactive tutorial" title="Interactive tutorial" data-help="Start the guided interactive tutorial">?</button>
     </div>
     <button id="hud-toggle" class="canvas-tool-btn hud-toggle" aria-label="Toggle stats overlay" title="Hide / show stats overlay" data-help="Hide / show the stats &amp; legend overlay">‹</button>
-    <div id="fire-pad" role="button" aria-label="Fire lysin dart" title="Lysin dart — press toward a direction to fire · red tick = nearest enemy, amber dot = nearest lysin"><div id="fire-needle"></div><div id="fire-enemy"></div><div id="fire-lysin"></div></div>
+    <div id="fire-pad" role="button" aria-label="Fire lysin dart" title="Lysin dart — press toward a direction to fire · red tick = nearest enemy, amber dot = nearest lysin · green wedge = steering"><div id="fire-move"></div><div id="fire-needle"></div><div id="fire-enemy"></div><div id="fire-lysin"></div></div>
     <div id="game-overlay">
       <div id="game-overlay-title"></div>
       <div id="game-overlay-sub"></div>
@@ -2053,7 +2070,7 @@
     <div class="card card--game">
       <div class="card__label">Play Mode</div>
       <div class="card__row">
-        <button id="game-btn" data-help="Play mode — steer your green microbe with WASD">🦠 Steer a microbe<span class="kbd-badge">G</span></button>
+        <button id="game-btn" data-help="Play mode — steer your green microbe with WASD or arrow keys">🦠 Steer a microbe<span class="kbd-badge">G</span></button>
       </div>
     </div>
 
@@ -2156,7 +2173,7 @@
     <div class="card card--shortcuts">
       <div class="card__label">Shortcuts</div>
       <div class="shortcuts-list">
-        <div id="wasd-hint" style="display:none"><kbd>W A S D</kbd> <span class="desc">steer your microbe — or press &amp; hold on the canvas</span></div>
+        <div id="wasd-hint" style="display:none"><kbd>W A S D</kbd> <kbd>← ↑ ↓ →</kbd> <span class="desc">steer your microbe — or press &amp; hold on the canvas</span></div>
         <kbd>M</kbd>           <span class="desc">open / close this panel</span>
         <kbd>,</kbd>           <span class="desc">quicksave</span>
         <kbd>.</kbd>           <span class="desc">quickload</span>

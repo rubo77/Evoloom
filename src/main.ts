@@ -1086,6 +1086,7 @@ const fireEnemy = document.getElementById('fire-enemy') as HTMLElement | null;
 const fireLysin = document.getElementById('fire-lysin') as HTMLElement | null;
 let lastFireCooldownIter = 0; // worker-side reload, mirrored per snapshot
 let minEnemyCount = -1; // lowest enemy loop count seen this match (-1 outside a match)
+let homingSeen = false; // snapshot mirror of the worker's guidance unlock — rising edge logs once per match
 let matchStartAt = -1e9; // performance.now() of match start — suppresses the kill-feed during loop-detection warmup
 let lastBiteAt = -1e9;        // performance.now() of the last enemy bite (drives the damage flash)
 let lastBiteStatusAt = -1e9;  // throttles the 'membrane breached' status text
@@ -1192,9 +1193,18 @@ function restartMatch(): void {
 document.getElementById('game-again')?.addEventListener('click', restartMatch);
 document.getElementById('game-exit')?.addEventListener('click', () => { if (gameMode) toggleGame(); });
 
-// ── WASD input → biased Brownian. We track which of W/A/S/D are down and
-// send a normalized direction vector to the worker whenever the set changes.
+// ── WASD/arrow input → biased Brownian. We track which of the eight
+// steering keys are down and send a normalized direction vector to the
+// worker whenever the set changes.
 const keyState = { w: false, a: false, s: false, d: false };
+// Arrow keys share the WASD state flags — four direction slots, not
+// eight, so W+ArrowUp still read as one held "up".
+const MOVE_KEYS: Record<string, 'w' | 'a' | 's' | 'd'> = {
+  KeyW: 'w', ArrowUp: 'w',
+  KeyA: 'a', ArrowLeft: 'a',
+  KeyS: 's', ArrowDown: 's',
+  KeyD: 'd', ArrowRight: 'd',
+};
 
 // Press-to-steer (game mode, no tool selected): while the pointer is held
 // on the canvas, the microbe swims toward the pointer's world position.
@@ -1235,6 +1245,7 @@ function pushSteerInput(): void {
     steerLastX = dx; steerLastY = dy;
     send({ type: 'setPlayerInput', x: dx, y: dy });
   }
+  setMoveGlow(dx, dy);
 }
 
 function endSteer(): void {
@@ -1255,6 +1266,17 @@ function pushPlayerInput(): void {
   const len = Math.sqrt(dx * dx + dy * dy);
   if (len > 0) { dx /= len; dy /= len; }
   send({ type: 'setPlayerInput', x: dx, y: dy });
+  setMoveGlow(dx, dy);
+}
+
+// Movement shimmer — a green wedge on the fire pad rim rotated to the
+// live steering direction (same convention as the needle: 0deg = up).
+// Instant feedback for key/hold input, gone the moment input stops.
+function setMoveGlow(dx: number, dy: number): void {
+  if (!firePad) return;
+  if (dx === 0 && dy === 0) { firePad.classList.remove('moving'); return; }
+  firePad.classList.add('moving');
+  firePad.style.setProperty('--mdeg', `${(Math.atan2(dy, dx) * 180 / Math.PI + 90).toFixed(1)}deg`);
 }
 
 // ── Recording ───────────────────────────────────────────────────────────────
@@ -3172,12 +3194,12 @@ document.addEventListener('keydown', (e) => {
   const isShortcutKey = /^Key[A-Z]$|^Comma$|^Period$/.test(e.code);
   if (isTyping && isShortcutKey) return;
 
-  // In game mode, WASD is reserved for the player. We still allow other shortcuts.
-  if (gameMode && (e.code === 'KeyW' || e.code === 'KeyA' || e.code === 'KeyS' || e.code === 'KeyD')) {
-    if (e.code === 'KeyW') keyState.w = true;
-    if (e.code === 'KeyA') keyState.a = true;
-    if (e.code === 'KeyS') keyState.s = true;
-    if (e.code === 'KeyD') keyState.d = true;
+  // In game mode, WASD/arrows are reserved for the player — arrows would
+  // otherwise scroll the page. Other shortcuts stay live.
+  const moveKey = MOVE_KEYS[e.code];
+  if (gameMode && moveKey) {
+    e.preventDefault();
+    keyState[moveKey] = true;
     pushPlayerInput();
     return;
   }
@@ -3227,10 +3249,8 @@ document.addEventListener('keydown', (e) => {
 });
 document.addEventListener('keyup', (e) => {
   if (!gameMode) return;
-  if (e.code === 'KeyW') { keyState.w = false; pushPlayerInput(); }
-  if (e.code === 'KeyA') { keyState.a = false; pushPlayerInput(); }
-  if (e.code === 'KeyS') { keyState.s = false; pushPlayerInput(); }
-  if (e.code === 'KeyD') { keyState.d = false; pushPlayerInput(); }
+  const moveKey = MOVE_KEYS[e.code];
+  if (moveKey) { keyState[moveKey] = false; pushPlayerInput(); }
 });
 
 // ── Interactive tutorial ────────────────────────────────────────────────────
@@ -3303,6 +3323,7 @@ function drawHud(ctx: CanvasRenderingContext2D, snap: SnapshotMsg): void {
       fireIters: snap.fireCooldownIter,
       dartCount: snap.projectileCount,
       ammo: snap.lysinAmmo,
+      homingOn: snap.homingOn,
       damageFlash: Math.max(0, 1 - (performance.now() - lastBiteAt) / 400),
     });
   } else {
@@ -3335,6 +3356,12 @@ function loop(): void {
       lastFireCooldownIter = snap.fireCooldownIter;
       firePad?.style.setProperty('--cd', snap.fireCooldownFrac.toFixed(3));
       firePad?.classList.toggle('empty', snap.lysinAmmo < 5);
+      // Homing unlock — rising edge only; a fresh match clears the flag
+      // worker-side, which resets this mirror automatically.
+      if (snap.homingOn && !homingSeen) {
+        logStatus('◎ homing guidance online — darts now curve toward enemies');
+      }
+      homingSeen = snap.homingOn;
       // Enemy bearing tick — same angle convention as the aim needle
       // (0deg = up), so a press aligned with the tick fires at the
       // nearest enemy.

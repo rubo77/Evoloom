@@ -878,6 +878,7 @@ export type GameHudStats = {
   fireIters: number;     // iterations until the lysin dart can fire (0 = ready)
   dartCount: number;     // dart atoms still under thrust
   ammo: number;          // lysin atoms banked for darts (5 per shot)
+  homingOn: boolean;     // terminal guidance earned (first confirmed hit)
   damageFlash: number;   // 0..1 — intensity of the just-bitten screen flash
 };
 
@@ -922,10 +923,13 @@ export function drawGameHUD2D(ctx: CanvasRenderingContext2D, atoms: Float32Array
     statusColor = HUD_GOOD;
   }
   // Lysin dart state — reload countdown, magazine and in-flight atoms.
+  // 'unguided' marks darts that still fly straight: terminal guidance
+  // unlocks on the first confirmed hit (worker-side flag).
+  const guide = stats.homingOn ? ' · homing' : ' · unguided';
   const dartText = stats.ammo < 5 ? `dart: no lysin (${stats.ammo})`
     : stats.fireIters > 0
-    ? `dart: ${(stats.fireIters / Math.max(1, stats.itersPerSec)).toFixed(1)}s · ammo ${stats.ammo}`
-    : `dart: READY · ammo ${stats.ammo}`;
+    ? `dart: ${(stats.fireIters / Math.max(1, stats.itersPerSec)).toFixed(1)}s · ammo ${stats.ammo}${guide}`
+    : `dart: READY · ammo ${stats.ammo}${guide}`;
   const line4 = stats.dartCount > 0 ? `${dartText} · ${stats.dartCount} out` : dartText;
   const dartColor = stats.ammo < 5 ? HUD_BAD
     : stats.fireIters > 0 ? HUD_WARN : HUD_GOOD;

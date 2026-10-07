@@ -14,6 +14,17 @@ import { Cell } from '../src/cell';
 import { initSimple, buildCell } from '../src/init';
 import { spawnDart, updateDarts } from '../src/dart';
 
+// Deterministic RNG — same mulberry32 patch the worker applies, so the
+// lysin grind after a burst is reproducible instead of flaky.
+let rngState = 0xC0FFEE;
+Math.random = () => {
+  rngState = (rngState + 0x6D2B79F5) | 0;
+  let t = rngState;
+  t = Math.imul(t ^ (t >>> 15), t | 1);
+  t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+};
+
 const W = 800, H = 500;
 const PLAYER = { x: 500, y: 250 };
 // The enemy sits 40 units off the firing line — without terminal
@@ -96,7 +107,9 @@ let detonated = false;
 for (let s = 1; s <= STEPS; s++) {
   grid.step();
   if (clusters.length > 0) {
-    const hit = updateDarts(grid, clusters, s);
+    // homing=true — this probe exists to verify the guidance curve
+    // (the worker gates it behind the first confirmed hit).
+    const hit = updateDarts(grid, clusters, s, true);
     if (hit) {
       detonated = true;
       console.log(`[DART-SIM] iter ${s} — DETONATION at (${hit.loc.x.toFixed(0)},${hit.loc.y.toFixed(0)})`);

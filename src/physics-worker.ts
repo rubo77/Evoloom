@@ -245,6 +245,10 @@ let lastPlayerMembraneFrac = 0; // sealed share of player 'a' atoms, 0..1
 let lastFireIter = -1e9;      // iteration of the last fired dart (far past = ready)
 let lastDartCount = 0;        // dart atoms still under thrust in the last snapshot
 let lysinAmmo = 0;            // lysin atoms available for darts (5 per shot)
+// Terminal guidance is earned, not given: darts fly straight until the
+// first confirmed detonation proves the aim — from then on every dart
+// homes in on enemy membrane material (see updateDarts).
+let homingUnlocked = false;
 // Live dart clusters — the bonded lysin atoms of each shot in flight.
 // Emptied on world rebuilds and when a cluster detonates or burns out.
 const dartClusters: Cell[][] = [];
@@ -869,6 +873,7 @@ function postSnapshot(): void {
     fireCooldownFrac: fireCooldown / FIRE_COOLDOWN_TICKS,
     projectileCount: lastDartCount,
     lysinAmmo,
+    homingOn: homingUnlocked,
     enemyDirX,
     enemyDirY,
     enemyDist,
@@ -1042,6 +1047,7 @@ function loadSaveState(s: SaveState): string | null {
   lastDartCount = 0;
   lysinAmmo = 0;
   lastBiteIter = -1e9;
+  homingUnlocked = false;
   dartClusters.length = 0;
   burning = false;
   burnTarget = 0;
@@ -1132,9 +1138,13 @@ function runOneStep(): void {
   grid.step();
   if (mode === 'wild') wildTick(grid);
   if (inGame && dartClusters.length > 0) {
-    const hit = updateDarts(grid, dartClusters, grid.iterations);
+    const hit = updateDarts(grid, dartClusters, grid.iterations, homingUnlocked);
     if (hit) {
       console.log(`[WEAPON] dart detonated at (${hit.loc.x.toFixed(0)},${hit.loc.y.toFixed(0)}) iter ${grid.iterations}`);
+      if (!homingUnlocked) {
+        homingUnlocked = true;
+        console.log('[WEAPON] homing guidance online — subsequent darts curve toward enemy membranes');
+      }
       const msg: DartHitMsg = { type: 'dartHit' };
       self.postMessage(msg);
     }
@@ -1315,6 +1325,7 @@ self.onmessage = (e: MessageEvent<unknown>) => {
       lastDartCount = 0;
       lysinAmmo = DART_AMMO_START;
       lastBiteIter = -1e9;
+      homingUnlocked = false;
       dartClusters.length = 0;
       setupGame();
       postSnapshotIfPaused();

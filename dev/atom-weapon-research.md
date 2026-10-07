@@ -356,6 +356,50 @@ Player feedback: the round fire pad was too small to aim comfortably.
   reached it. `applyGameModeUI` now closes the panel on match start
   when the backdrop is shown (desktop docked panel is untouched).
 
+## Iteration 13 — homing earned, move shimmer, arrow keys, burrow fuse
+
+Player feedback: homing felt like a freebie — it should be earned or
+cost extra lysin. Implemented the unlock path (costing ammo would
+starve the already-tight economy):
+
+- **Homing gate:** `homingUnlocked` starts false each match — darts fly
+  dead straight until the FIRST confirmed detonation, then guidance
+  goes online for the rest of the match (`updateDarts(…, homing)`).
+  Snapshot carries `homingOn`; HUD dart line shows `· unguided` vs
+  `· homing`, and a rising-edge status announces the unlock. Resets on
+  startGame and save-load like the other match state.
+- **Burrow fuse:** halving dart speed exposed a lethality regression —
+  rim-level bursts scattered the lysin cloud *outward* and the ring
+  resealed (one sim run: hit at the rim, ring intact 700 ticks later).
+  Now first contact sets `detonateAtIter` (12-tick fuse ≈ 14 units at
+  cruise), the cluster keeps thrusting into the membrane, and the burst
+  erupts inside the ring. ~75 % single-dart kill rate in the seeded
+  sim — not every hit kills, which is good design tension anyway.
+- **Deterministic dart-sim:** monkey-patches `Math.random` with the
+  same mulberry32 the worker uses — the lysin grind after a burst is
+  reproducible now (seed 0xC0FFEE → PASS).
+- **Movement shimmer:** `#fire-move` — a green conic wedge on the pad
+  rim rotated to the live steering input (`--mdeg`, needle convention).
+  `setMoveGlow` is called from both input funnels (`pushPlayerInput`,
+  `pushSteerInput`), so WASD, arrows and canvas hold all light it; it
+  clears the moment input stops or the steer target is reached.
+- **Arrow keys:** `MOVE_KEYS` maps Arrows onto the same four direction
+  flags as WASD (W+ArrowUp = one "up"), `preventDefault` stops page
+  scroll. Hint + button help text updated.
+
+### Why the cell crawls outside water (explanation)
+
+Steering is *biased Brownian*, not a propulsion force: every step each
+player atom gets a `PLAYER_KICK = 0.018` kick along 28 % input + 72 %
+random direction. Outside a water droplet the kick is multiplied by
+`DRY_THERMAL_FACTOR = 0.07` — ~14× weaker, by design ("dry = sluggish").
+Inside a droplet the biased kicks accumulate (bondedDamping 1.0) toward
+the cap in ~1 s; outside the same accumulation needs ~14 s and is
+mostly drowned by random thermal kicks. That is why the dry arena feels
+almost unsteerable and puddles feel normal. If the game arena should
+be fair regardless of water, the dry factor for `playerControlled`
+atoms could be raised — a design choice, not a bug.
+
 ## Test plan
 
 - Playwright: enter game mode → dispatch fire → assert projectile atoms

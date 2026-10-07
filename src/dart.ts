@@ -23,6 +23,9 @@ export const DART_ATOMS           = 5;     // lysin payload atoms per dart —
 // keep it an assist, not a lock-on.
 const DART_HOMING_RANGE           = 200;   // world units — ~33 atom radii
 const DART_HOMING_BLEND           = 0.10;  // thrust vector pull per tick
+const DART_FUSE_TICKS             = 12;    // burrow time after membrane contact —
+                                           // ~14 u at cruise, past the rim, so the
+                                           // lysin burst lands inside the ring
 const DART_SPAWN_CLEARANCE        = 4;     // × RADIUS beyond the player ring —
                                            // > REACTION_RANGE (2.5) so the shot
                                            // can never dissolve the firing cell
@@ -64,43 +67,57 @@ export function spawnDart(
   return { cluster, x: px, y: py };
 }
 
-// Dart lifecycle. A cluster detonates when any of its atoms reaches a
-// bonded non-player 'a' atom — bonded 'a' only exists inside membrane
-// rings, so this is a clean enemy-membrane contact test. Detonation
-// breaks the cluster's p–p bonds, scattering the payload as a lysin
-// cloud that keeps grinding the breach; a single grazing pass would let
-// the ring reseal. The player's own ring does not trigger detonation,
+// Dart lifecycle. First contact with a bonded non-player 'a' atom —
+// bonded 'a' only exists inside membrane rings — lights a short fuse:
+// the cluster keeps thrusting into the ring, then bursts, breaking the
+// p–p bonds and scattering the payload as a lysin cloud that keeps
+// grinding the breach; a rim-level pop would scatter outward and let
+// the ring reseal. The player's own ring does not trigger the fuse,
 // though the armed lysin can still eat it — firing into your own wake
 // is a real risk. Returns the detonating atom for logging, else null.
-export function updateDarts(grid: Grid, clusters: Cell[][], now: number): Cell | null {
+// `homing` gates terminal guidance — darts fly straight until the
+// worker unlocks it (first confirmed detonation in a match).
+export function updateDarts(grid: Grid, clusters: Cell[][], now: number, homing: boolean): Cell | null {
   for (let i = clusters.length - 1; i >= 0; i--) {
     const cluster = clusters[i];
+    if (cluster[0].detonateAtIter > 0 && now >= cluster[0].detonateAtIter) {
+      // Fuse burned down — burst the payload as a lysin cloud inside
+      // the ring the cluster burrowed into.
+      for (const a of cluster) {
+        a.breakAllBonds();
+        a.thrustUntilIter = now;
+      }
+      clusters.splice(i, 1);
+      return cluster[0];
+    }
     if (cluster[0].thrustUntilIter <= now) {
       clusters.splice(i, 1); // fuel spent — drifts as loose lysin now
       continue;
     }
     // Terminal guidance — pull the shared thrust vector toward the
     // nearest enemy membrane atom inside homing range.
-    let cx = 0, cy = 0;
-    for (const a of cluster) { cx += a.loc.x; cy += a.loc.y; }
-    cx /= cluster.length; cy /= cluster.length;
-    const near = grid.getAllWithinRadius(cx, cy, DART_HOMING_RANGE);
-    let best: Cell | null = null, bestD = Infinity;
-    for (const c of near) {
-      if (c.type !== 'a' || c.playerControlled || c.bonds.size === 0) continue;
-      const d = Math.hypot(c.loc.x - cx, c.loc.y - cy);
-      if (d < bestD) { bestD = d; best = c; }
-    }
-    if (best) {
-      const tx = (best.loc.x - cx) / bestD;
-      const ty = (best.loc.y - cy) / bestD;
-      const head = cluster[0];
-      let hx = head.thrustX + (tx * DART_THRUST - head.thrustX) * DART_HOMING_BLEND;
-      let hy = head.thrustY + (ty * DART_THRUST - head.thrustY) * DART_HOMING_BLEND;
-      const hm = Math.hypot(hx, hy) || 1;
-      hx = hx / hm * DART_THRUST;
-      hy = hy / hm * DART_THRUST;
-      for (const a of cluster) { a.thrustX = hx; a.thrustY = hy; }
+    if (homing) {
+      let cx = 0, cy = 0;
+      for (const a of cluster) { cx += a.loc.x; cy += a.loc.y; }
+      cx /= cluster.length; cy /= cluster.length;
+      const near = grid.getAllWithinRadius(cx, cy, DART_HOMING_RANGE);
+      let best: Cell | null = null, bestD = Infinity;
+      for (const c of near) {
+        if (c.type !== 'a' || c.playerControlled || c.bonds.size === 0) continue;
+        const d = Math.hypot(c.loc.x - cx, c.loc.y - cy);
+        if (d < bestD) { bestD = d; best = c; }
+      }
+      if (best) {
+        const tx = (best.loc.x - cx) / bestD;
+        const ty = (best.loc.y - cy) / bestD;
+        const head = cluster[0];
+        let hx = head.thrustX + (tx * DART_THRUST - head.thrustX) * DART_HOMING_BLEND;
+        let hy = head.thrustY + (ty * DART_THRUST - head.thrustY) * DART_HOMING_BLEND;
+        const hm = Math.hypot(hx, hy) || 1;
+        hx = hx / hm * DART_THRUST;
+        hy = hy / hm * DART_THRUST;
+        for (const a of cluster) { a.thrustX = hx; a.thrustY = hy; }
+      }
     }
     // Cruise clamp — the constant kick would otherwise accumulate to
     // MAX_VELOCITY; hold the cluster at DART_SPEED instead.
@@ -115,13 +132,10 @@ export function updateDarts(grid: Grid, clusters: Cell[][], now: number): Cell |
       const near = grid.getAllWithinRadius(atom.loc.x, atom.loc.y, RADIUS * 2.4);
       const hit = near.some((c) =>
         c.type === 'a' && !c.playerControlled && c.bonds.size > 0);
-      if (hit) {
-        for (const a of cluster) {
-          a.breakAllBonds();
-          a.thrustUntilIter = now; // cut thrust — scatter as a cloud
-        }
-        clusters.splice(i, 1);
-        return atom;
+      if (hit && cluster[0].detonateAtIter === 0) {
+        // Rim contact — light the fuse; the burst happens after the
+        // cluster has burrowed DART_FUSE_TICKS deeper.
+        cluster[0].detonateAtIter = now + DART_FUSE_TICKS;
       }
     }
   }

@@ -23,6 +23,9 @@ export class Cell {
   thrustX = 0;
   thrustY = 0;
   thrustUntilIter = 0;
+  // Dart burrow fuse — set on first enemy-membrane contact; the cluster
+  // keeps thrusting into the ring until this iteration, then bursts.
+  detonateAtIter = 0;
   // Hydrolysis exemption: epoch-stamped "is this cell live as of tick X?"
   // The hydrolysis BFS sets liveCheckedAt = currentIter for every atom in
   // a live cell graph. Protection check is `cell.liveCheckedAt === iter`.

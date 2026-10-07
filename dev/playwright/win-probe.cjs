@@ -80,6 +80,6 @@ const { chromium } = require('playwright');
       console.log(`[WIN] t=${((Date.now() - t0) / 1000).toFixed(0)}s shots=${shots} bites=${bites.length} dist=${s.dist}`);
     }
   }
-  console.log('[WIN] kills/pickups:\n' + logs.filter((l) => l.includes('Enemy down') || l.includes('lysin collected') || l.includes('dart detonated')).slice(-20).join('\n'));
+  console.log('[WIN] kills/pickups:\n' + logs.filter((l) => l.includes('Enemy down') || l.includes('lysin collected') || l.includes('lysovirus detonated')).slice(-20).join('\n'));
   await browser.close();
 })();

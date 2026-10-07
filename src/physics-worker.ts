@@ -414,7 +414,9 @@ function fireDart(dx: number, dy: number): void {
     return;
   }
   const ux = dx / mag, uy = dy / mag;
-  // Player centroid + outer reach over the controlled atoms.
+  // Player centroid + the outermost controlled atom along the fire axis.
+  // Aiming east at an elongated cell must launch just past the eastern
+  // membrane edge — not past the cell's widest extent in any direction.
   let cx = 0, cy = 0, cnt = 0;
   for (const c of grid.getCells()) {
     if (!c.playerControlled) continue;
@@ -422,17 +424,17 @@ function fireDart(dx: number, dy: number): void {
   }
   if (cnt === 0) { console.log('[WEAPON] fire rejected — no player atoms'); return; }
   cx /= cnt; cy /= cnt;
-  let maxR = 0;
+  let fireEdge = 0;
   for (const c of grid.getCells()) {
     if (!c.playerControlled) continue;
-    const d = Math.hypot(c.loc.x - cx, c.loc.y - cy);
-    if (d > maxR) maxR = d;
+    const p = (c.loc.x - cx) * ux + (c.loc.y - cy) * uy;
+    if (p > fireEdge) fireEdge = p;
   }
-  const { cluster, x: px, y: py } = spawnDart(grid, cx, cy, maxR, ux, uy, grid.iterations);
+  const { cluster, x: px, y: py } = spawnDart(grid, cx, cy, fireEdge, ux, uy, grid.iterations);
   lastFireIter = grid.iterations;
   lysinAmmo -= DART_ATOMS;
   dartClusters.push(cluster);
-  console.log(`[WEAPON] dart fired dir(${ux.toFixed(2)},${uy.toFixed(2)}) at (${px.toFixed(0)},${py.toFixed(0)}) — ${cluster.length} lysin atoms, ammo ${lysinAmmo}`);
+  console.log(`[WEAPON] lysovirus fired dir(${ux.toFixed(2)},${uy.toFixed(2)}) at (${px.toFixed(0)},${py.toFixed(0)}) — ${cluster.length} lysin atoms, ammo ${lysinAmmo}`);
 }
 
 // Lysin pickup — free 'p' atoms touching the player's cell are absorbed
@@ -1140,10 +1142,10 @@ function runOneStep(): void {
   if (inGame && dartClusters.length > 0) {
     const hit = updateDarts(grid, dartClusters, grid.iterations, homingUnlocked);
     if (hit) {
-      console.log(`[WEAPON] dart detonated at (${hit.loc.x.toFixed(0)},${hit.loc.y.toFixed(0)}) iter ${grid.iterations}`);
+      console.log(`[WEAPON] lysovirus detonated at (${hit.loc.x.toFixed(0)},${hit.loc.y.toFixed(0)}) iter ${grid.iterations}`);
       if (!homingUnlocked) {
         homingUnlocked = true;
-        console.log('[WEAPON] homing guidance online — subsequent darts curve toward enemy membranes');
+        console.log('[WEAPON] homing guidance online — subsequent lysoviruses curve toward enemy membranes');
       }
       const msg: DartHitMsg = { type: 'dartHit' };
       self.postMessage(msg);

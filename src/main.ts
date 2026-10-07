@@ -1108,7 +1108,7 @@ if (firePad) {
     // shortage with 'fireRejected' and the status line explains it.
     if (lastFireCooldownIter > 0) return; // still reloading
     send({ type: 'fire', x: dx, y: dy });
-    console.log(`[FIRE] dart requested dir(${(dx / mag).toFixed(2)},${(dy / mag).toFixed(2)})`);
+    console.log(`[FIRE] lysovirus requested dir(${(dx / mag).toFixed(2)},${(dy / mag).toFixed(2)})`);
   });
 }
 
@@ -3407,7 +3407,7 @@ function loop(): void {
       // Homing unlock — rising edge only; a fresh match clears the flag
       // worker-side, which resets this mirror automatically.
       if (snap.homingOn && !homingSeen) {
-        logStatus('◎ homing guidance online — darts now curve toward enemies');
+        logStatus('◎ homing guidance online — lysoviruses now curve toward enemies');
       }
       homingSeen = snap.homingOn;
       // Enemy bearing tick — same angle convention as the aim needle

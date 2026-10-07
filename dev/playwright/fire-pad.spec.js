@@ -1,5 +1,5 @@
 // Test: game-mode fire pad — visible only in play mode, a directional
-// press fires a lysin dart toward the press offset, the compass needle
+// press fires a lysovirus toward the press offset, the compass needle
 // turns to the aim, and the cooldown sweep blocks instant re-fire.
 // Run:  PLAYWRIGHT_BROWSERS_PATH=/home/ruben/.playwright-browsers \
 //         npx playwright test fire-pad.spec.js --project=chromium
@@ -35,7 +35,7 @@ test('fire pad fires a lysin dart toward the press offset', async ({ page }) => 
 
   // Main thread logs the requested direction; the needle turns east.
   await page.waitForTimeout(500);
-  const fireLog = logs.find((l) => l.includes('[FIRE] dart requested'));
+  const fireLog = logs.find((l) => l.includes('[FIRE] lysovirus requested'));
   if (!fireLog) console.log('CAPTURED LOGS:\n' + logs.slice(-40).join('\n'));
   expect(fireLog).toBeTruthy();
   expect(fireLog).toContain('dir(1.00,0.00)');
@@ -56,7 +56,7 @@ test('fire pad fires a lysin dart toward the press offset', async ({ page }) => 
   // the snapshot lags the worker log, so after each shot the test must
   // first see the reload ENGAGE (non-zero) before waiting for 0.000,
   // otherwise it reads the stale zero from the previous reload.
-  const firedCount = () => logs.filter((l) => l.includes('[WEAPON] dart fired')).length;
+  const firedCount = () => logs.filter((l) => l.includes('[WEAPON] lysovirus fired')).length;
   const cooling = () => pad.evaluate((el) => el.style.getPropertyValue('--cd').trim() !== '0.000');
   const reloaded = () => pad.evaluate((el) => el.style.getPropertyValue('--cd').trim() === '0.000');
   const waitReload = async () => {
@@ -85,7 +85,10 @@ test('fire pad fires a lysin dart toward the press offset', async ({ page }) => 
   expect(firedCount()).toBe(3); // no fourth shot
   // The worker rejects the fire — the status line may be overwritten by
   // the kill feed, so the worker's own log line is the assertion target.
-  expect(logs.some((l) => l.includes('[WEAPON] fire rejected') && l.includes('out of lysin'))).toBeTruthy();
+  // Poll it: under parallel workers the reject message can lag the click.
+  await expect.poll(
+    () => logs.some((l) => l.includes('[WEAPON] fire rejected') && l.includes('out of lysin')),
+    { timeout: 5000 }).toBeTruthy();
   await expect(pad).toHaveClass(/empty/);
 
   // Pad hides again when leaving game mode.

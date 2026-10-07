@@ -7,6 +7,7 @@
 
 import { RADIUS } from './cell';
 import { STRIDE, unpackType, unpackState } from './snapshot';
+import { DART_ATOMS } from './dart';
 import {
   ATOM_COLORS, FALLBACK_COLOR, MEMBRANE_LINE, PREDATOR_LINE, PLAYER_LINE,
   PREDATOR_UNIT, ALPHA, MARGIN, rgbHex, alphaHex, rgba,
@@ -922,16 +923,18 @@ export function drawGameHUD2D(ctx: CanvasRenderingContext2D, atoms: Float32Array
     status = `victory in ${(stats.winIters / Math.max(1, stats.itersPerSec)).toFixed(1)}s`;
     statusColor = HUD_GOOD;
   }
-  // Lysin dart state — reload countdown, magazine and in-flight atoms.
-  // 'unguided' marks darts that still fly straight: terminal guidance
-  // unlocks on the first confirmed hit (worker-side flag).
-  const guide = stats.homingOn ? ' · homing' : ' · unguided';
-  const dartText = stats.ammo < 5 ? `dart: no lysin (${stats.ammo})`
+  // Lysovirus weapon state — reload countdown on line four, magazine
+  // and guidance on line five. 'unguided' marks shots that still fly
+  // straight: terminal guidance unlocks on the first confirmed hit.
+  const guide = stats.homingOn ? 'homing' : 'unguided';
+  const line4 = stats.ammo < DART_ATOMS ? 'lysovirus: no lysin'
     : stats.fireIters > 0
-    ? `dart: ${(stats.fireIters / Math.max(1, stats.itersPerSec)).toFixed(1)}s · ammo ${stats.ammo}${guide}`
-    : `dart: READY · ammo ${stats.ammo}${guide}`;
-  const line4 = stats.dartCount > 0 ? `${dartText} · ${stats.dartCount} out` : dartText;
-  const dartColor = stats.ammo < 5 ? HUD_BAD
+    ? `lysovirus: reload ${(stats.fireIters / Math.max(1, stats.itersPerSec)).toFixed(1)}s`
+    : 'lysovirus: READY';
+  const inFlight = stats.dartCount > 0
+    ? ` · ${Math.round(stats.dartCount / DART_ATOMS)} in flight` : '';
+  const line5 = `ammo ${stats.ammo} · ${guide}${inFlight}`;
+  const dartColor = stats.ammo < DART_ATOMS ? HUD_BAD
     : stats.fireIters > 0 ? HUD_WARN : HUD_GOOD;
   const textX = hudTextX(ctx);
   const textW = Math.max(
@@ -939,8 +942,9 @@ export function drawGameHUD2D(ctx: CanvasRenderingContext2D, atoms: Float32Array
     ctx.measureText(line2).width,
     ctx.measureText(line3).width,
     ctx.measureText(line4).width,
+    ctx.measureText(line5).width,
     ctx.measureText(status).width);
-  drawHudBox(ctx, textX, textW, 90);
+  drawHudBox(ctx, textX, textW, 106);
   const ty = HUD_STATS_RECT.y + 16;
   ctx.fillStyle = '#ffffff';
   ctx.fillText(line1, textX, ty);
@@ -949,8 +953,9 @@ export function drawGameHUD2D(ctx: CanvasRenderingContext2D, atoms: Float32Array
   ctx.fillText(line3, textX, ty + 32);
   ctx.fillStyle = dartColor;
   ctx.fillText(line4, textX, ty + 48);
+  ctx.fillText(line5, textX, ty + 64);
   ctx.fillStyle = statusColor;
-  ctx.fillText(status, textX, ty + 64);
+  ctx.fillText(status, textX, ty + 80);
   // Damage flash — a decaying red vignette on every enemy bite.
   if (stats.damageFlash > 0) {
     const w = ctx.canvas.width, h = ctx.canvas.height;

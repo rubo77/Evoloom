@@ -319,3 +319,11 @@ all of copilot's findings, using the titles he used (e.g.
 "Instrumented test asserts the wrong application package ID") as
 individual commits, if you find the suggestions sensible — do not
 believe copilot blindly.
+
+26-10-07 — "Where is the term 'dart' used in the display? I want a different
+term shown to the user, e.g. phage or spore or Lysovirus — what would fit
+well? List all interface texts containing dart." → chose 'lysovirus', plus:
+line break after READY in the HUD weapon readout; make the 'out' count
+self-explanatory; asked why the dart spawns so far from the cell — spawn
+should sit directly outside the membrane along the fire direction instead
+of beyond the cell's widest radius.

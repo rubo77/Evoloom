@@ -4,17 +4,11 @@
 // Needs the app served on :9131 (bash run.sh or python3 -m http.server 9131 from repo root)
 
 const { test, expect } = require('@playwright/test');
-
-const BASE = 'http://localhost:9131/';
+const { openApp, collectErrors } = require('./helpers.cjs');
 
 test('follow mode tracks selection and yields to manual pan', async ({ page }) => {
-  const errors = [];
-  page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
-  page.on('pageerror', (e) => errors.push(String(e)));
-
-  await page.goto(BASE);
-  await page.waitForSelector('#canvas', { timeout: 15000 });
-  await page.waitForTimeout(2500);
+  const errors = collectErrors(page);
+  await openApp(page);
 
   // Follow with nothing selected → button is disabled.
   await page.keyboard.press('m');

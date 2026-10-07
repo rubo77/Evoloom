@@ -5,16 +5,11 @@
 // Needs the app served on :9131
 
 const { test, expect } = require('@playwright/test');
-
-const BASE = 'http://localhost:9131/';
+const { openApp, collectErrors } = require('./helpers.cjs');
 
 test('a atoms render as visible dots', async ({ page }) => {
-  const errors = [];
-  page.on('pageerror', (e) => errors.push(String(e)));
-
-  await page.goto(BASE);
-  await page.waitForSelector('#canvas', { timeout: 15000 });
-  await page.waitForTimeout(2500);
+  const errors = collectErrors(page);
+  await openApp(page);
 
   await page.click('#tutorial-btn');
   // advance through the info steps to the select task so the protocell

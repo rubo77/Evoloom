@@ -102,10 +102,14 @@ test('guided tutorial gates task steps on real user actions', async ({ page }) =
   expect(errors).toEqual([]);
 });
 
-test('Esc leaves the tutorial midway', async ({ page }) => {
+test('Esc does not leave the tutorial — Skip tour does', async ({ page }) => {
   await openApp(page, { settle: 0 });
   await page.click('#tutorial-btn');
   await page.click('#tut-next');
   await page.keyboard.press('Escape');
+  // Esc belongs to the app (inspector/lab/panel), never exits the tour.
+  await expect(page.locator('#tutorial-card')).toBeVisible();
+  await expectStep(page, 'atoms, states, bonds');
+  await page.click('#tut-skip');
   await expect(page.locator('#tutorial-overlay')).toHaveCount(0);
 });

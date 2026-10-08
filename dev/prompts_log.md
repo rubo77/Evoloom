@@ -395,3 +395,17 @@ time? It must not be deleted.
 - 26-10-08 ~06:30 — "jetzt starten die lysoviren wieder entfernt von der eigenen zelle, die sollen aber direkt ausserhalb der zelle starten in die richtung, die man zielt" — EN: now the lysoviruses spawn away from the own cell again — they should start directly outside the cell in the direction you aim.
 
 - 26-10-08 ~09:30 — "committe alles, dann : 2. gegnerische viren, die schon keinen loop mehr haben, sollen auch nciht mehr beissen und auch nciht mehr auf die eigene uelle zusteuern, sondern nur vollständige gegner" — EN: commit everything, then: enemy viruses that no longer have a loop should no longer bite and no longer steer toward the own cell — only complete enemies.
+
+- 26-10-08 ~10:20 — "im tutorial steht öfter mal, dass die atoms die buchstaben zeigen, 'sed, every atom shows its type letter' aber die sind ja gar nicht zu sehen, ausser man drückt i, also formuliere das um, 'sed, every atom has its type letter and...'" — EN: the tutorial repeatedly says atoms show their letters ("every atom shows its type letter") but they aren't visible unless you press i — rephrase it to "every atom has its type letter and...".
+
+- 26-10-08 ~11:00 — "das tutorial kann man kaum lesen mit der hellgrauen schrift auf dunkelgrau, mache die schrift im fliesstext weis" — EN: the tutorial is barely readable with light gray text on dark gray — make the body text white.
+
+- 26-10-08 ~11:40 — "bei Step 17 / 19 Noise & evolution muss das menu dahin scrollen, so dass man den noise button sieht und highlighten" — EN: at step 17/19 Noise & evolution the menu must scroll so the noise button is visible, and highlight it.
+
+- 26-10-08 ~12:10 — "How_to_play.md: das braucht noch mehr anleitung mit den lysovirusses, targeten, die timer in dem hud erklärt und so weiter — vervollständige das" — EN: the manual needs more guidance on lysoviruses, targeting, the HUD timers explained etc. — complete it.
+
+- 26-10-08 ~13:00 — "esc soll das tutorial nicht schliessen" — EN: Esc should not close the tutorial.
+
+- 26-10-08 ~13:20 — "'atom has a type letter and a state number' ist falsch bold, has muss normal und 'type letter and state number' muss bold" — EN: the bold markup is wrong — 'has' must be normal and 'type letter and state number' bold.
+
+- 26-10-08 ~13:40 — "How_to_play.md im tutorial muss verlinkt sein in neuem fenster direkt zum view im github repo" — EN: How_to_play.md must be linked in the tutorial, opening the GitHub repo file view in a new window.

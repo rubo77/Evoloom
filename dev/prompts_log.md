@@ -320,10 +320,99 @@ all of copilot's findings, using the titles he used (e.g.
 individual commits, if you find the suggestions sensible — do not
 believe copilot blindly.
 
-26-10-07 — "Where is the term 'dart' used in the display? I want a different
-term shown to the user, e.g. phage or spore or Lysovirus — what would fit
-well? List all interface texts containing dart." → chose 'lysovirus', plus:
-line break after READY in the HUD weapon readout; make the 'out' count
-self-explanatory; asked why the dart spawns so far from the cell — spawn
-should sit directly outside the membrane along the fire direction instead
-of beyond the cell's widest radius.
+## 26-10-05 10:35
+Later (re: cherry-picking to the MR branch) — first keep working on the
+main branch, there is still a lot to fix.
+
+## 26-10-05 10:50
+[Screenshot: cell with differently sized atoms] On the phone in Chrome
+the atoms are all different sizes; in Firefox everything is correct,
+and in Chrome on desktop too.
+
+## 26-10-05 11:00
+Remember: after changes that mainly affect Android, always run
+./mobile-build.sh right away. — Also: what is Evoloom's version anyway?
+
+## 26-10-05 11:20
+Add a credits screen like Lalumo, with a very small link at the bottom
+of the page to privacy and impress, like Lalumo. Set the version to 3.0
+without a third zero. Also copy add_changelog from Lalumo — and adapt it.
+
+## 26-10-05 11:40
+The credits modal must go into the menu div at the bottom right so it
+doesn't steal height from the game.
+
+## 26-10-05 11:55
+There is still empty space below the info message at the bottom — that
+must go; the info message should just be a narrow bar at the bottom.
+
+## 26-10-05 12:05
+The headings can all always sit above their block, and "Version Evoloom
+3.0" / "App development eclabs" can go into one column.
+
+## 26-10-05 12:15
+The contact address must be evoloom-support@it.z11.de.
+
+## 26-10-05 12:30
+Something deleted .idea/.name again — what could it have been this
+time? It must not be deleted.
+
+## 26-10-06
+
+- 26-10-06 ~01:30 — "analysiere die cheie,und versuche eine möglichkeit zu finden, wie man ein atom komplex erzeugen kann mit einem eigenen antrieb, den man auf seine gegner schiessen kann mit lysindrin, um die gegner zu zerstören, wenn du etwas gefunden hast, dann baue ein, dass im game mode statt der legende oben links ein button zu sehen ist, auf den man drücken kann um ein geschoss abzuschiessen, dabei kann man in dem button die richtung angeben, also eine art himmelsrichtungen nadel, jenachdem wo man drückt, startet das geschoss in diese richtung aus deiner zelle heraus. analysiere zuerst genau und berechne, was es für regeln geben könnte und was für extra atome, die so etwas ermöglichen, suche auch online auf der seite von david castor https://dabbycastro.com/ und https://x.com/davidortsac und was man sonst noch darüber finden kann, auch andere projekte über squirm3. sammel alles was du finden kannst in einem md file und dann plane wie man so eine abschuss-mechanik bauen könnte. teste solange rum, bis du etwas brauchbares gefunden hast, auch mit playwright und mehr debug ausgaben in der js console um rauszufinden, was passiert auf der simulation. du kannst ja auch kleinere simulationen starten" — EN: analyze the chemistry and find a way to create an atom complex with its own propulsion that can be shot at opponents using lysin to destroy them; once something viable is found, build a directional fire button (compass needle) replacing the top-left legend in game mode; first analyze and calculate possible rules and extra atoms needed; research dabbycastro.com, x.com/davidortsac and other squirm3 projects; collect findings in an md file and plan the firing mechanic; test until something useful is found, with playwright and extra debug console output, using smaller simulations.
+
+- 26-10-06 ~02:00 — "habe auch versucht den david cortac u kontaktieren: https://x.com/reubwo, das ist mein account reubwo" — EN: I also tried to contact David Castro: https://x.com/reubwo — that is my account reubwo.
+
+- 26-10-06 ~02:10 — "Lgge alle diene Fortschritte in der md datei , dann committe alles soweit mit einer ausführichen commitmessage, was eingebaut wurde im game und wie es funktiniert / dann versuche weiter das gameplay zu verbessern" — EN: put all progress into the md file, then commit everything so far with a detailed commit message explaining what was built into the game and how it works; then keep trying to improve the gameplay. (asked twice, verbatim)
+
+- 26-10-06 ~03:00 — same prompt as 02:10 repeated (3rd time, verbatim): "Lgge alle diene Fortschritte in der md datei …" — EN: log all progress in the md file, commit with a detailed message about what was built and how it works, then keep improving gameplay.
+
+- 26-10-06 ~03:40 — same prompt repeated (4th time, verbatim): log progress to md, commit with detailed message, keep improving gameplay.
+
+- 26-10-06 ~04:20 — same prompt repeated (5th time, verbatim): log progress to md, commit with detailed message, keep improving gameplay.
+
+- 26-10-06 ~05:00 — same prompt repeated (6th time, verbatim): log progress to md, commit with detailed message, keep improving gameplay.
+
+- 26-10-06 ~05:45 — same prompt repeated (7th time, verbatim): log progress to md, commit with detailed message, keep improving gameplay.
+
+- 26-10-07 00:36 — "die projektile müssen halb so schnell bewegen" — EN: the projectiles must move at half speed.
+
+- 26-10-07 ~05:00 — "der runde target kreis im hud muss doppelt so gross" — EN: the round target circle in the HUD must be twice as big.
+
+- 26-10-07 ~05:30 — "das homing missile effekt muss durch einen zusatz erfolg freigeschaltet werden oder extra lysin kosten / committe das, dann erkläre, wie die bewegung der spieler zelle funktioniert, mir scheint das sehr langsam ausserhalb des wassers, innerhalb ist es merklich, aber ausserhalb scheint es fast keinen effekt zu haben / baue ein, dass das im game hud, der kreis einen grünen schimmer bekommt in der richtung, in die man die zelle gerade bewegt, damit man ein visuelles feedback hat, wenn man mit wasd oder mit touch auf den canvas eine bewegung auslöst, und der schimmer soll wieder verschwinden, wenn man aufhört zu drücken / ausserdem sollen auch die pfeiltasten für die bewegung funktionieren, nicht nur wasd" — EN: the homing missile effect must be unlocked by an additional achievement or cost extra lysin; commit this, then explain how the player cell movement works — it seems very slow outside water, noticeable inside; build a green shimmer on the HUD circle in the direction the cell is currently moving as visual feedback for WASD or touch movement, disappearing when input stops; also make the arrow keys work for movement, not only WASD.
+
+- 26-10-07 ~09:45 — "ja, den Dry-Faktor für `playerControlled` etwas anheben / play mode muss über den brush tools angeordnet werden / beim allerersten aufruf der seite soll die auswahl wie bei game over angezeigt werden (DRY), aber mit den labels \"start game\" oder \"Simulation\", dass soll in der session gespeichert wein oder localstorage so dass das nicht noch mal kommt ausser bei game over oder win" — EN: yes, raise the dry factor for playerControlled somewhat; the play mode button must be placed above the brush tools; on the very first page load show a choice like the game-over overlay (DRY) but with labels "start game" or "Simulation", stored in session/localStorage so it doesn't appear again except at game over or win.
+
+- 26-10-07 ~14:00 — "habe das auf 0.3 gesetzt, ist besser, aber erkläre das hier besser und warum … und hier auch besser erklären, wie das zusammen hängt, auch warum 0.3 ausserhalb langsamer ist als 0.07 innerhalb des wassers" — EN: I set DRY_PLAYER_FACTOR to 0.3, feels better — but explain it better in the md and in grid.ts comments, including how the dry factors relate and why steering outside water is still slower than inside.
+
+- 26-10-07 ~14:30 — "greifen die enemy cells eigentlich an? die sollten sich ja langsam auf deine zelle zubewegen, wenn sie in die nähe kommen, aber nicht so schnell, dass man nicht entkommen könnte" — EN: do the enemy cells actually attack? they should slowly move toward your cell when they get close, but not so fast that escape is impossible.
+
+- 26-10-05 08:10 — "Can you read the copilot reviews in the PR? Adjust the branch with all of copilot's findings, using the titles he used (e.g. \"Instrumented test asserts the wrong application package ID\") as individual commits, if you find the suggestions sensible — do not believe copilot blindly." — EN: already English.
+
+- 26-10-07 ~17:30 — "wo wird überall der begriff dart in der anzeige benutzt? ich will, dass da ein anderer begriff für den benutzer erscheint, z.b. phage oder spore oder Lysovirus, was würde gut passen, liste alle interface texte, die dart enthalten auf" — EN: where is the term dart used in the display? I want a different term for the user, e.g. phage or spore or Lysovirus — what would fit? List all interface texts containing dart. → user chose 'lysovirus', asked for a line break after READY, a self-explanatory replacement for 'out', and questioned the far spawn distance — spawn should sit directly outside the membrane along the fire direction.
+
+- 26-10-07 ~18:00 — "committe alles, dann baue alles auch in den main branch ein und wechsel im git wieder auf main / dann baue eine playwright testsuite, die immer included wird mit standard funktionen, wie seitenaufruf, game starten, usw. also alles, was in allen tests ständig gebraucht wird DRY in funktionen packen, die included werden und überall benutzen statt immer alles neu zu erfinden." — EN: commit everything, then merge it all into main and switch back to main; then build a playwright test suite with shared standard functions (page load, game start, etc.) — everything constantly needed by all tests, packed DRY into functions that get included and used everywhere instead of reinventing each time.
+
+- 26-10-08 ~01:30 — "committe das, dann setze den target-kreis im HUD etwas tiefer und mache den noch 30% grösser und baue aussen um den kreis einen ring ein, der klickbar ist und als weitere möglichkeit funktioniert, die zelle zu steuern, damit man alles an einer stelle bedienen kann, also steuern und schiessen" — EN: commit, then move the target circle in the HUD a bit lower and make it 30% bigger, and build a clickable ring around it that steers the cell — so steering and firing can all be operated in one spot.
+
+- 26-10-08 ~02:00 — "geht zwar, aber dadurch geht der lysovirus schuss nicht mehr auf dem restlichen inneren kreis. 2. es soll an der stelle in der man läuft in dem ring ein kleiner ball erscheinen / der ring mit dem ball soll aussehen, als wenn das eine vertiefung ist, in der eine murmel rollt (der anfasser)" — EN: it works, but now the lysovirus shot no longer works on the rest of the inner circle. 2. a small ball should appear in the ring where you're steering; the ring with the ball should look like a groove a marble rolls in (the grip).
+
+- 26-10-08 ~02:20 — "der kreis und die kugel sollen weniger auffällig, pastelliger und die kugel auch transparent" — EN: the ring and the ball should be less prominent, more pastel, and the ball transparent too.
+
+- 26-10-08 ~06:30 — "jetzt starten die lysoviren wieder entfernt von der eigenen zelle, die sollen aber direkt ausserhalb der zelle starten in die richtung, die man zielt" — EN: now the lysoviruses spawn away from the own cell again — they should start directly outside the cell in the direction you aim.
+
+- 26-10-08 ~09:30 — "committe alles, dann : 2. gegnerische viren, die schon keinen loop mehr haben, sollen auch nciht mehr beissen und auch nciht mehr auf die eigene uelle zusteuern, sondern nur vollständige gegner" — EN: commit everything, then: enemy viruses that no longer have a loop should no longer bite and no longer steer toward the own cell — only complete enemies.
+
+- 26-10-08 ~10:20 — "im tutorial steht öfter mal, dass die atoms die buchstaben zeigen, 'sed, every atom shows its type letter' aber die sind ja gar nicht zu sehen, ausser man drückt i, also formuliere das um, 'sed, every atom has its type letter and...'" — EN: the tutorial repeatedly says atoms show their letters ("every atom shows its type letter") but they aren't visible unless you press i — rephrase it to "every atom has its type letter and...".
+
+- 26-10-08 ~11:00 — "das tutorial kann man kaum lesen mit der hellgrauen schrift auf dunkelgrau, mache die schrift im fliesstext weis" — EN: the tutorial is barely readable with light gray text on dark gray — make the body text white.
+
+- 26-10-08 ~11:40 — "bei Step 17 / 19 Noise & evolution muss das menu dahin scrollen, so dass man den noise button sieht und highlighten" — EN: at step 17/19 Noise & evolution the menu must scroll so the noise button is visible, and highlight it.
+
+- 26-10-08 ~12:10 — "How_to_play.md: das braucht noch mehr anleitung mit den lysovirusses, targeten, die timer in dem hud erklärt und so weiter — vervollständige das" — EN: the manual needs more guidance on lysoviruses, targeting, the HUD timers explained etc. — complete it.
+
+- 26-10-08 ~13:00 — "esc soll das tutorial nicht schliessen" — EN: Esc should not close the tutorial.
+
+- 26-10-08 ~13:20 — "'atom has a type letter and a state number' ist falsch bold, has muss normal und 'type letter and state number' muss bold" — EN: the bold markup is wrong — 'has' must be normal and 'type letter and state number' bold.
+
+- 26-10-08 ~13:40 — "How_to_play.md im tutorial muss verlinkt sein in neuem fenster direkt zum view im github repo" — EN: How_to_play.md must be linked in the tutorial, opening the GitHub repo file view in a new window.

@@ -128,8 +128,8 @@ the fastest way to understand what Primordium's soup is doing.
 
 - **Press & hold on the canvas** steers the microbe toward the pointer
   — works with mouse or touch
-- **WASD** provides the same steering bias as a desktop alternative —
-  a nudge, not propulsion
+- **WASD / arrow keys** provide the same steering bias as a desktop
+  alternative — a nudge, not propulsion
 - Periodic **soup/water spawns** keep you fed; **lysin micro-spots**
   appear every ~10,000 ticks and dissolve membranes on contact
 - A membrane loop counts as **yours** when ≥ 40 % of its atoms are
@@ -137,6 +137,72 @@ the fastest way to understand what Primordium's soup is doing.
 - **Win** 🏆 — no *fully alive* enemy cells (closed membrane with both
   gene endpoints bonded) survive for ~5 seconds
 - **Lose** ☠ — all your cells are lysed
+
+### The command pad (steering + firing in one spot)
+
+The circle top-center replaces the sandbox legend while playing:
+
+- **Inner pad = fire.** Press anywhere inside it — the press position
+  is the aim: pressing its right edge fires right, its top fires up.
+  A thin **needle** shows the last aim, and a radial **cooldown sweep**
+  covers the pad while reloading (~1.5 s); the pad dims when you run
+  out of lysin.
+- **Outer ring = steer.** The recessed groove around the pad is a
+  second joystick: hold it and the microbe swims toward that direction
+  — two fingers can steer and fire at once. The translucent **marble**
+  rolling in the groove marks your current movement direction (WASD,
+  arrows and canvas holds move it too).
+- **Red tick = nearest living enemy**, bearing only — it blinks faster
+  once a foe closes under ~220 units. **Amber dot = nearest free
+  lysin** for rearming. A press aligned with the tick fires straight
+  at that enemy.
+- **Green wedge** = the direction your cell is actually moving.
+
+### Lysoviruses — your weapon
+
+Your ammunition is **lysin** (`p` atoms): each shot packs 5 of them
+into a bonded **lysovirus** that bursts a membrane open like a
+real phage lysing a cell.
+
+- A shot costs **5 lysin**; you start with **15** (3 shots), magazine
+  cap **50** (10 shots). Fly through loose orange `p` atoms to rearm —
+  including the payload of missed shots, which stays collectable.
+- The lysovirus launches just outside your membrane, straight along
+  your aim, burns for ~1.25 s, then drifts on. On membrane contact it
+  **burrows in for a moment, then detonates inside the ring** —
+  releasing lysin where it dissolves the cell from within.
+- **Homing unlocks on your first confirmed kill**: from then on every
+  shot curves gently toward enemy membrane within ~200 units. Until
+  then shots fly unguided, so aim along the red tick.
+- Enemies fight back: only a *complete* enemy — a closed membrane loop
+  carrying both gene endpoints — hunts you and can bite. Contact can
+  break one of your membrane bonds (a red vignette flashes; a ~0.5 s
+  grace follows each bite). Broken membrane scraps are inert — they
+  drift, but can't chase, bite, or attract the red tick.
+
+### HUD lines & timers (top left)
+
+```
+enemies: 4                     ← living enemy loops (win target)
+you:      128 atoms            ← your cell's atom count
+membrane: ██████░░ 78%         ← sealed fraction — green ≥66%, amber
+                                 ≥33%, red below; drops the moment a
+                                 bite tears the ring
+lysovirus: reload 0.8s         ← READY / reload countdown / no lysin
+ammo 10 · homing · 1 in flight ← lysin atoms · guidance · shots out
+victory in 3.2s                ← status line, see below
+```
+
+The bottom **status line** carries the match clocks:
+
+- `wipe out every enemy` — normal state
+- `victory in Ns` — every enemy loop is gone; survive the last ~5 s
+  for the win (a new enemy division resets the clock)
+- `membrane down — reseal in Ns!` — your loop is broken; you have ~1 s
+  to let it reseal before you're counted as lysed
+
+All countdowns follow the **speed slider** — slow motion stretches
+them along with the sim.
 
 ## Atom dictionary
 
@@ -189,6 +255,7 @@ Select an atom (`Select atom` brush), then open with `I`:
 | `P` | lysin on / off |
 | `R` | record video |
 | `G` | play mode (steer a microbe) |
+| `WASD` / arrows | steer the microbe (play mode) |
 | `N` | noise on / off |
 | `H` | hydrolysis on / off |
 | `,` | quicksave |

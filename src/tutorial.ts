@@ -5,8 +5,9 @@
 // paint, lysin, game mode…). Scripted demos paste a hand-built protocell and
 // drive the live sim via the normal ControlMsg channel.
 //
-// Navigation: Next/Back buttons, ←/→ keys, progress dots; Esc or "Skip tour"
-// leaves anytime and restores the pause/speed state.
+// Navigation: Next/Back buttons, ←/→ keys, progress dots; "Skip tour"
+// leaves anytime and restores the pause/speed state. Esc is left to the
+// app (inspector, lab, panel) and never exits the tour.
 
 import type { ControlMsg, SelectionState } from './snapshot';
 import { RADIUS } from './cell';
@@ -146,7 +147,7 @@ const STEPS: Step[] = [
       of that, membrane-enclosed cells emerge that copy their genome and
       divide.<br><br>This is a <b>guided tour</b>: some steps ask you to do
       things on the field — the tour only continues once you've done them.
-      <b>Esc</b> or <b>Skip tour</b> leaves anytime.`,
+      <b>Skip tour</b> leaves anytime.`,
   },
   {
     title: 'The soup: atoms, states, bonds',
@@ -170,8 +171,9 @@ const STEPS: Step[] = [
     task: (d) => d.isPaused(),
     exit: (d) => d.closePanel(),
     html: `<span class="tutorial-task">TASK — press <kbd>Space</kbd> (or the
-      Pause button) to freeze the sim.</span><br><br>Paused, every circle
-      shows its <b>type letter + state number</b> — zoom in and look.`,
+      Pause button) to freeze the sim.</span><br><br>Frozen, the atoms stop
+      jittering — zoom in: every atom has a <b>type letter and a state
+      number</b>; the inspector reveals them two steps from now.`,
   },
   {
     title: 'Task: select some atoms',
@@ -217,8 +219,7 @@ const STEPS: Step[] = [
       d.panTowardEdge();
       const c = d.viewCenterWorld();
       d.send({ type: 'pasteSelection', x: c.x, y: c.y, selection: buildDemoCell() });
-      // Paused so the cell can't drift away before you've looked at it —
-      // and paused rendering labels every atom with type + state.
+      // Paused so the cell can't drift away before you've looked at it.
       d.setPaused(true);
       d.focusOn(c.x, c.y, 110);
       d.logStatus('Tutorial: pasted a hand-built protocell at view center');
@@ -227,8 +228,9 @@ const STEPS: Step[] = [
       paused the sim so it can't drift away: a closed ring of
       <code>a</code> atoms (the membrane) enclosing a gene strand
       <code>e-b-b-a-c-b-d-f</code> plus some loose cargo atoms.<br><br>
-      Paused, every atom shows its <b>type letter + state number</b> —
-      look closely. The yellow halo means the drop is <b>selected</b>.`,
+      The colors are the atom types — each atom has a <b>type letter and
+      a state number</b>, and the inspector (<kbd>I</kbd>) you just used
+      reads them. The yellow halo means the drop is <b>selected</b>.`,
   },
   {
     title: 'Task: open the atom dictionary',
@@ -308,7 +310,7 @@ const STEPS: Step[] = [
   },
   {
     title: 'Noise & evolution',
-    spotlight: '#control-panel',
+    spotlight: '#noise-btn',
     enter: (d) => d.openPanel(),
     html: `In the panel's <b>Lab</b> section, <b>Noise</b> (<kbd>N</kbd>)
       injects copy misfires, decay and bond failures — mutation. Mutated
@@ -331,7 +333,9 @@ const STEPS: Step[] = [
     title: "You're playing now",
     html: `That was the tour — the world stays in play mode, so
       <b>keep steering</b> your microbe.<br><br>
-      📄 <b>How_to_play.md</b> — the full manual in the repo<br>
+      📄 <a href="https://github.com/rubo77/Evoloom/blob/main/How_to_play.md"
+      target="_blank" rel="noopener"><b>How_to_play.md</b></a> — the full
+      manual in the repo<br>
       🧪 <a href="https://github.com/rubo77/OrganicBuilder" target="_blank"
       rel="noopener">Organic Builder</a> — a step-by-step tutorial app for
       this exact reaction model<br><br>
@@ -407,6 +411,8 @@ function renderStep(): void {
   });
   byId('tut-skip').addEventListener('click', closeTutorial);
   positionSpotlight();
+  // The panel slides in over 0.24s — re-aim the ring once it settles.
+  setTimeout(positionSpotlight, 260);
   if (step.task) startPolling(step);
 }
 
@@ -447,6 +453,9 @@ function positionSpotlight(): void {
   if (!spot) return;
   const sel = STEPS[index].spotlight;
   const el = sel ? (document.querySelector(sel) as HTMLElement | null) : null;
+  // Panel controls can sit below the fold — scroll the target into view
+  // so the ring lands on it instead of off-screen.
+  el?.scrollIntoView({ block: 'center', inline: 'nearest' });
   const rect = el ? el.getBoundingClientRect() : null;
   if (!el || !rect || (rect.width === 0 && rect.height === 0)) {
     spot.hidden = true;
@@ -471,13 +480,11 @@ function goTo(next: number): void {
 
 function onKey(e: KeyboardEvent): void {
   if (!active) return;
-  if (e.code === 'Escape') {
-    // Inspector and the lab modal own Esc while open — let the app's
-    // handler close them so the "close it yourself" tasks work.
-    if (deps!.isInspectorOpen() || deps!.isLabOpen()) return;
-    e.stopPropagation();
-    closeTutorial();
-  } else if (e.code === 'ArrowRight' && taskDone) {
+  // Esc never exits the tour — it stays owned by the app: inspector,
+  // lab modal and panel close on Esc, and the "close it yourself"
+  // tasks depend on that. Only Skip tour leaves.
+  if (e.code === 'Escape') return;
+  if (e.code === 'ArrowRight' && taskDone) {
     e.stopPropagation();
     goTo(index + 1);
   } else if (e.code === 'ArrowLeft') {

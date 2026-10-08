@@ -459,3 +459,23 @@ atoms could be raised — a design choice, not a bug.
   `setPlayerInput` vector; while held it wins over WASD and canvas
   hold, releasing restores them. Steering and firing share one spot —
   ring for movement, pad for shots.
+
+## Iteration 16 — only living enemy loops are dangerous
+
+- **Problem:** seek, bite and the red bearing tick keyed on any bonded
+  non-player `a` atom. Broken membrane scraps and empty husks left
+  after a kill kept drifting toward the player, could still bite, and
+  pulled the compass — dead material acted alive.
+- **Fix:** `findMembraneLoopsAndPack` already decides which chains are
+  living predators (closed ring + both `e`/`f` gene endpoints). It now
+  also fills `liveEnemyAtoms` — the atom set of exactly those loops —
+  on every snapshot. `updateEnemySeek`, `updateEnemyThreat` (bite
+  roll) and the snapshot's nearest-enemy bearing all require
+  membership, so loop-less scraps are inert: they don't hunt, don't
+  bite and don't attract the tick. Win counting was already loop-based
+  and stays consistent — the atoms of a killed cell stop being
+  dangerous the same snapshot its loop stops counting.
+- **Probe:** `ram-probe.cjs` steers continuously at the enemy bearing
+  — a live loop rammed head-on still bites and kills (bite at ~17s,
+  death ~21s), while husks drifting through the player interior deal
+  no damage and no longer seek.

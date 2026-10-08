@@ -393,3 +393,5 @@ time? It must not be deleted.
 - 26-10-08 ~02:20 — "der kreis und die kugel sollen weniger auffällig, pastelliger und die kugel auch transparent" — EN: the ring and the ball should be less prominent, more pastel, and the ball transparent too.
 
 - 26-10-08 ~06:30 — "jetzt starten die lysoviren wieder entfernt von der eigenen zelle, die sollen aber direkt ausserhalb der zelle starten in die richtung, die man zielt" — EN: now the lysoviruses spawn away from the own cell again — they should start directly outside the cell in the direction you aim.
+
+- 26-10-08 ~09:30 — "committe alles, dann : 2. gegnerische viren, die schon keinen loop mehr haben, sollen auch nciht mehr beissen und auch nciht mehr auf die eigene uelle zusteuern, sondern nur vollständige gegner" — EN: commit everything, then: enemy viruses that no longer have a loop should no longer bite and no longer steer toward the own cell — only complete enemies.

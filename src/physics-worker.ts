@@ -249,6 +249,13 @@ let lysinAmmo = 0;            // lysin atoms available for darts (5 per shot)
 // first confirmed detonation proves the aim — from then on every dart
 // homes in on enemy membrane material (see updateDarts).
 let homingUnlocked = false;
+// Atoms belonging to ALIVE enemy loops — a closed membrane chain that
+// still carries both gene endpoints (e/f). Rebuilt by
+// findMembraneLoopsAndPack each snapshot; only these atoms may seek
+// the player, bite, and draw the red bearing tick. Broken membrane
+// scraps and empty husks are inert.
+const liveEnemyAtoms = new Set<Cell>();
+
 // Live dart clusters — the bonded lysin atoms of each shot in flight.
 // Emptied on world rebuilds and when a cluster detonates or burns out.
 const dartClusters: Cell[][] = [];
@@ -492,7 +499,7 @@ function updateEnemySeek(): void {
   if (cnt === 0) return;
   cx /= cnt; cy /= cnt;
   for (const c of grid.getCells()) {
-    if (c.type !== 'a' || c.playerControlled || c.bonds.size === 0) continue;
+    if (c.type !== 'a' || c.playerControlled || !liveEnemyAtoms.has(c)) continue;
     const dx = cx - c.loc.x, dy = cy - c.loc.y;
     const d = Math.hypot(dx, dy);
     if (d < 1) continue;
@@ -514,7 +521,7 @@ function updateEnemyThreat(): void {
     const near = grid.getAllWithinRadius(c.loc.x, c.loc.y, RADIUS * 2.5);
     let enemyNear = false;
     for (const n of near) {
-      if (n.type === 'a' && !n.playerControlled && n.bonds.size > 0) { enemyNear = true; break; }
+      if (n.type === 'a' && !n.playerControlled && liveEnemyAtoms.has(n)) { enemyNear = true; break; }
     }
     if (!enemyNear) continue;
     for (const partner of c.bonds) {
@@ -573,6 +580,7 @@ type LoopInfo = { vertCount: number; isPredator: boolean; firstVertOffset: numbe
 
 function findMembraneLoopsAndPack(cells: Cell[], indexMap: Map<Cell, number>, loopsBuf: Uint32Array): { loopCount: number; usedLen: number; playerLoops: number; enemyLoops: number; playerMembraneFrac: number } {
   const visited = new Set<Cell>();
+  liveEnemyAtoms.clear();
   const headers: LoopInfo[] = [];
   let writeIdx = 1;
   let totalVerts = 0;
@@ -657,7 +665,11 @@ function findMembraneLoopsAndPack(cells: Cell[], indexMap: Map<Cell, number>, lo
         if (hasE && hasF) break;
       }
       if (hasE && hasF) {
-        if (kind === 2) playerLoops++; else enemyLoops++;
+        if (kind === 2) playerLoops++;
+        else {
+          enemyLoops++;
+          for (const c of chain) liveEnemyAtoms.add(c);
+        }
       }
       if (kind === 2) sealedPlayerMembrane += chain.length;
     }
@@ -844,7 +856,7 @@ function postSnapshot(): void {
       for (const c of grid.getCells()) {
         const dx = c.loc.x - pcx, dy = c.loc.y - pcy;
         const d = dx * dx + dy * dy;
-        if (c.type === 'a' && !c.playerControlled && c.bonds.size > 0) {
+        if (c.type === 'a' && !c.playerControlled && liveEnemyAtoms.has(c)) {
           if (d < best) { best = d; bx = dx; by = dy; }
         } else if (c.type === 'p' && c.bonds.size === 0 && c.thrustUntilIter <= grid.iterations) {
           if (d < bestP) { bestP = d; px = dx; py = dy; }

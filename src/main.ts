@@ -1033,6 +1033,7 @@ function applyGameModeUI(): void {
   hydroSlidersRow.classList.toggle('shown', !gameMode && hydroOn);
   hydroBtn.disabled = gameMode;
   // Lysin dart fire pad replaces the top-left legend while a match runs.
+  fireWrap?.classList.toggle('shown', gameMode);
   firePad?.classList.toggle('shown', gameMode);
   // On touch layouts the control panel opens as a modal over a backdrop
   // that would cover the fire pad — dismiss it when a match starts.
@@ -1052,6 +1053,8 @@ function exitGameModeUI(): void {
   setFollow(false);
   keyState.w = keyState.a = keyState.s = keyState.d = false;
   steerTarget = null;
+  ringDir = null;
+  steerRing?.classList.remove('steering');
   send({ type: 'setPlayerInput', x: 0, y: 0 });
   applyGameModeUI();
 }
@@ -1080,6 +1083,8 @@ function toggleGame(): void {
 // the pad's center is the launch direction, so it works identically on
 // mouse and touch. The needle marks the aim; the conic --cd sweep shows
 // reload, drained each frame from the worker's snapshot fields.
+const fireWrap = document.getElementById('fire-wrap') as HTMLElement | null;
+const steerRing = document.getElementById('steer-ring') as HTMLElement | null;
 const firePad = document.getElementById('fire-pad') as HTMLElement | null;
 const fireNeedle = document.getElementById('fire-needle') as HTMLElement | null;
 const fireEnemy = document.getElementById('fire-enemy') as HTMLElement | null;
@@ -1110,6 +1115,50 @@ if (firePad) {
     send({ type: 'fire', x: dx, y: dy });
     console.log(`[FIRE] lysovirus requested dir(${(dx / mag).toFixed(2)},${(dy / mag).toFixed(2)})`);
   });
+}
+
+// Steering ring — the annulus around the fire pad. Holding the ring is a
+// virtual joystick: the direction from the pad center is the swim
+// direction, pushed as a fixed setPlayerInput vector (unlike the canvas
+// hold, which steers toward a world position). While the ring is held it
+// wins over WASD and canvas steering; releasing restores them.
+let ringDir: { x: number; y: number } | null = null;
+
+function pushRingInput(): void {
+  if (!gameMode || !ringDir) return;
+  send({ type: 'setPlayerInput', x: ringDir.x, y: ringDir.y });
+  setMoveGlow(ringDir.x, ringDir.y);
+}
+
+function updateRingDir(e: PointerEvent): void {
+  if (!steerRing) return;
+  const r = steerRing.getBoundingClientRect();
+  const dx = e.clientX - (r.left + r.width / 2);
+  const dy = e.clientY - (r.top + r.height / 2);
+  const mag = Math.hypot(dx, dy);
+  if (mag < 1) return;
+  ringDir = { x: dx / mag, y: dy / mag };
+  pushRingInput();
+}
+
+function endRingSteer(): void {
+  if (!ringDir) return;
+  ringDir = null;
+  steerRing?.classList.remove('steering');
+  pushPlayerInput(); // restores WASD / canvas-hold state
+}
+
+if (steerRing) {
+  steerRing.addEventListener('pointerdown', (e) => {
+    if (!gameMode) return;
+    e.preventDefault();
+    steerRing.setPointerCapture(e.pointerId);
+    steerRing.classList.add('steering');
+    updateRingDir(e);
+  });
+  steerRing.addEventListener('pointermove', (e) => { if (ringDir) updateRingDir(e); });
+  steerRing.addEventListener('pointerup', endRingSteer);
+  steerRing.addEventListener('pointercancel', endRingSteer);
 }
 
 // ── HUD hide/show ─────────────────────────────────────────────────────────
@@ -1272,7 +1321,7 @@ function playerCenterWorld(): { x: number; y: number } | null {
 }
 
 function pushSteerInput(): void {
-  if (!gameMode || !steerTarget) return;
+  if (!gameMode || !steerTarget || ringDir) return;
   let dx = 0, dy = 0;
   const c = playerCenterWorld();
   if (c) {
@@ -1298,6 +1347,7 @@ function endSteer(): void {
 
 function pushPlayerInput(): void {
   if (!gameMode) return;
+  if (ringDir) { pushRingInput(); return; }
   if (steerTarget) { pushSteerInput(); return; }
   let dx = 0, dy = 0;
   if (keyState.d) dx += 1;
@@ -1318,6 +1368,10 @@ function setMoveGlow(dx: number, dy: number): void {
   if (dx === 0 && dy === 0) { firePad.classList.remove('moving'); return; }
   firePad.classList.add('moving');
   firePad.style.setProperty('--mdeg', `${(Math.atan2(dy, dx) * 180 / Math.PI + 90).toFixed(1)}deg`);
+  // The marble rolls to mid-groove in the steer direction — every input
+  // source lands here, so WASD moves it exactly like the ring press.
+  steerRing?.style.setProperty('--bx', `${(dx * 128).toFixed(1)}px`);
+  steerRing?.style.setProperty('--by', `${(dy * 128).toFixed(1)}px`);
 }
 
 // ── Recording ───────────────────────────────────────────────────────────────

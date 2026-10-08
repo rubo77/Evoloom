@@ -414,27 +414,44 @@ function fireDart(dx: number, dy: number): void {
     return;
   }
   const ux = dx / mag, uy = dy / mag;
-  // Player centroid + the outermost controlled atom along the fire axis.
-  // Aiming east at an elongated cell must launch just past the eastern
-  // membrane edge — not past the cell's widest extent in any direction.
+  // Centroid over BONDED player atoms only — torn-off membrane scraps
+  // keep the player flag and would skew both the center and the edge.
   let cx = 0, cy = 0, cnt = 0;
   for (const c of grid.getCells()) {
-    if (!c.playerControlled) continue;
+    if (!c.playerControlled || c.bonds.size === 0) continue;
     cx += c.loc.x; cy += c.loc.y; cnt++;
   }
   if (cnt === 0) { console.log('[WEAPON] fire rejected — no player atoms'); return; }
   cx /= cnt; cy /= cnt;
-  let fireEdge = 0;
+  // The membrane edge along the aim axis = the largest forward
+  // projection among atoms inside a corridor around the aim ray — an
+  // off-axis protrusion (or a far-flung scrap) must not push the spawn
+  // out. Corridor half-width covers the cluster's satellite radius.
+  let fireEdge = 0, corridorSeen = false;
   for (const c of grid.getCells()) {
-    if (!c.playerControlled) continue;
-    const p = (c.loc.x - cx) * ux + (c.loc.y - cy) * uy;
-    if (p > fireEdge) fireEdge = p;
+    if (!c.playerControlled || c.bonds.size === 0) continue;
+    const fx = c.loc.x - cx, fy = c.loc.y - cy;
+    const perp = fx * -uy + fy * ux;
+    const proj = fx * ux + fy * uy;
+    if (Math.abs(perp) < RADIUS * 3.5) {
+      corridorSeen = true;
+      if (proj > fireEdge) fireEdge = proj;
+    }
+  }
+  if (!corridorSeen) {
+    // Degenerate ring (sideways sliver): fall back to the widest
+    // projection so the shot still clears the membrane.
+    for (const c of grid.getCells()) {
+      if (!c.playerControlled || c.bonds.size === 0) continue;
+      const p = (c.loc.x - cx) * ux + (c.loc.y - cy) * uy;
+      if (p > fireEdge) fireEdge = p;
+    }
   }
   const { cluster, x: px, y: py } = spawnDart(grid, cx, cy, fireEdge, ux, uy, grid.iterations);
   lastFireIter = grid.iterations;
   lysinAmmo -= DART_ATOMS;
   dartClusters.push(cluster);
-  console.log(`[WEAPON] lysovirus fired dir(${ux.toFixed(2)},${uy.toFixed(2)}) at (${px.toFixed(0)},${py.toFixed(0)}) — ${cluster.length} lysin atoms, ammo ${lysinAmmo}`);
+  console.log(`[WEAPON] lysovirus fired dir(${ux.toFixed(2)},${uy.toFixed(2)}) at (${px.toFixed(0)},${py.toFixed(0)}) — ${cluster.length} lysin atoms, ammo ${lysinAmmo}, edge ${fireEdge.toFixed(0)}`);
 }
 
 // Lysin pickup — free 'p' atoms touching the player's cell are absorbed

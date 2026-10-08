@@ -26,7 +26,7 @@ const DART_HOMING_BLEND           = 0.10;  // thrust vector pull per tick
 const DART_FUSE_TICKS             = 12;    // burrow time after membrane contact —
                                            // ~14 u at cruise, past the rim, so the
                                            // lysin burst lands inside the ring
-const DART_SPAWN_CLEARANCE        = 4.5;   // × RADIUS beyond the outermost player
+const DART_SPAWN_CLEARANCE        = 5;     // × RADIUS beyond the outermost player
                                            // atom on the fire axis — the cluster's
                                            // innermost satellite (1.6R behind the
                                            // core) still clears REACTION_RANGE (2.5R),

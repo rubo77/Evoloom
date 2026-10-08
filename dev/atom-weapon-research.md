@@ -435,3 +435,27 @@ atoms could be raised — a design choice, not a bug.
   debug flag for trajectory tracing.
 - Small-sim unit probe via worker messages (spawn 2 cells close
   together, fire at point-blank, watch enemy loop count drop).
+
+## Iteration 15 — lysovirus naming, membrane-edge spawn, steering ring
+
+- **UI rename:** the weapon is presented to the player as the
+  *lysovirus* — it injects lysin into an enemy membrane and lyses it
+  from inside, matching the biological metaphor. HUD, tooltips,
+  aria-labels and log lines updated; internal identifiers stay `dart`.
+- **HUD readout is two lines:** `lysovirus: READY|reload Ns|no lysin`
+  and `ammo N · unguided|homing · M in flight` — the cryptic `N out`
+  atom counter is now a plain count of shots in flight.
+- **Directional spawn edge:** `fireDart` projects BONDED player atoms
+  inside a ±3.5R corridor around the aim ray onto the aim axis
+  (`fireEdge`) — torn-off membrane scraps keep the player flag and
+  skewed both centroid and edge, and the widest radius in any
+  direction pushed spawns far past the aimed membrane edge. Clearance
+  is 5×RADIUS so the innermost cluster satellite still clears
+  REACTION_RANGE; a sideways-sliver ring falls back to the widest
+  projection.
+- **Steering ring:** the fire pad (176→229 px, moved below the stats
+  box) now sits inside a `#steer-ring` annulus — a virtual joystick.
+  Holding the ring sends the direction from pad center as a fixed
+  `setPlayerInput` vector; while held it wins over WASD and canvas
+  hold, releasing restores them. Steering and firing share one spot —
+  ring for movement, pad for shots.

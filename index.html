@@ -316,24 +316,87 @@
     }
     .scope-frame.microscope::after { opacity: 1; }
 
-    /* Lysin dart fire pad — game-mode replacement for the legend block.
-       Press position relative to the center is the launch direction;
-       the needle marks the aim and the conic sweep shows reload. */
+    /* Lysovirus fire pad + steering ring — game-mode replacement for the
+       legend block. The wrap positions both zones: the inner pad fires
+       (press offset = launch direction), the outer ring steers the cell
+       while held (direction from center = swim direction) — everything
+       the match needs in one spot. */
+    #fire-wrap {
+      position: absolute;
+      top: 124px;         /* below the game stats box on the overlay canvas */
+      left: 4px;
+      width: 285px;
+      height: 285px;
+      z-index: 12;
+      display: none;
+      pointer-events: none;
+    }
+    #fire-wrap.shown { display: block; }
+    /* Steering ring — a recessed groove around the pad that a marble
+       rolls in while steering (the grip). clip-path keeps pointer hits
+       inside the circle so the square corners stay dead; the band only
+       spans the annulus (≈80–100% of the wrap radius) so the fire pad
+       keeps its own look. */
+    #steer-ring {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      clip-path: circle(50%);
+      background: radial-gradient(circle,
+        transparent 78%,
+        rgba(30, 40, 36, 0.22) 83%,
+        rgba(30, 40, 36, 0.30) 89%,
+        rgba(30, 40, 36, 0.20) 95%,
+        rgba(148, 220, 178, 0.08) 99%);
+      box-shadow:
+        inset 0 3px 10px rgba(0, 0, 0, 0.35),
+        inset 0 -2px 6px rgba(255, 255, 255, 0.07),
+        0 0 0 1px rgba(148, 220, 178, 0.16);
+      pointer-events: auto;
+      touch-action: none; /* ring presses must never scroll the page */
+      cursor: pointer;
+    }
+    #steer-ring.steering {
+      box-shadow:
+        inset 0 3px 10px rgba(0, 0, 0, 0.4),
+        inset 0 -2px 6px rgba(255, 255, 255, 0.10),
+        0 0 0 1px rgba(148, 220, 178, 0.45);
+    }
+    /* The marble — rolls along the groove toward the steering direction,
+       set via --bx/--by from setMoveGlow so every input source (ring,
+       WASD, canvas hold) moves it. Stays where it was left, like a
+       trackball resting in its channel. */
+    #ring-ball {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 34% 28%,
+        rgba(255, 255, 255, 0.55),
+        rgba(160, 228, 192, 0.45) 32%,
+        rgba(90, 150, 118, 0.42) 78%);
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3),
+                  inset 0 -2px 4px rgba(0, 0, 0, 0.15);
+      transform: translate(-50%, -50%) translate(var(--bx, 0px), var(--by, -128px));
+      transition: transform 0.07s linear;
+      pointer-events: none;
+    }
     #fire-pad {
       position: absolute;
-      top: 106px;         /* below the game stats box on the overlay canvas */
-      left: 10px;
-      width: 176px;
-      height: 176px;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 229px;
+      height: 229px;
       border-radius: 50%;
       background: rgba(0, 0, 0, 0.55);
       border: 1px solid rgba(255, 255, 255, 0.25);
-      z-index: 12;
-      display: none;
-      touch-action: none; /* pad presses must never scroll the page */
+      pointer-events: auto; /* the wrap disables events; pad + ring re-enable */
+      touch-action: none;
       cursor: crosshair;
     }
-    #fire-pad.shown { display: block; }
     /* Out of lysin — pad dims so the reload sweep can't be mistaken
        for a ready weapon */
     #fire-pad.empty { opacity: 0.35; }
@@ -352,9 +415,9 @@
     #fire-needle {
       position: absolute;
       left: calc(50% - 3px);
-      top: calc(50% - 60px);
+      top: calc(50% - 78px);
       width: 6px;
-      height: 60px;
+      height: 78px;
       transform-origin: 50% 100%;
       transform: rotate(0deg);
       background: linear-gradient(to top, transparent, var(--c-primary, #d4a64f));
@@ -373,7 +436,7 @@
       border-radius: 3px;
       background: #ff5f5f;
       box-shadow: 0 0 5px rgba(255, 95, 95, 0.8);
-      transform-origin: 50% 84px; /* pad center: half of the 176px pad minus the 4px top offset */
+      transform-origin: 50% 110.5px; /* pad center: half of the 229px pad minus the 4px top offset */
       transform: rotate(0deg);
       pointer-events: none;
       display: none;
@@ -397,7 +460,7 @@
       border-radius: 50%;
       background: #f0a63c;
       box-shadow: 0 0 5px rgba(240, 166, 60, 0.9);
-      transform-origin: 50% 80px;
+      transform-origin: 50% 106.5px; /* half the 229px pad minus the 8px top offset */
       transform: rotate(0deg);
       pointer-events: none;
       display: none;
@@ -1769,7 +1832,7 @@
       <button id="tutorial-btn" class="canvas-tool-btn" aria-label="Interactive tutorial" title="Interactive tutorial" data-help="Start the guided interactive tutorial">?</button>
     </div>
     <button id="hud-toggle" class="canvas-tool-btn hud-toggle" aria-label="Toggle stats overlay" title="Hide / show stats overlay" data-help="Hide / show the stats &amp; legend overlay">‹</button>
-    <div id="fire-pad" role="button" aria-label="Fire lysovirus" title="Lysovirus — press toward a direction to fire · red tick = nearest enemy, amber dot = nearest lysin · green wedge = steering"><div id="fire-move"></div><div id="fire-needle"></div><div id="fire-enemy"></div><div id="fire-lysin"></div></div>
+    <div id="fire-wrap"><div id="steer-ring" role="button" aria-label="Steer cell" title="Steering — hold anywhere on the green ring to swim toward it"><div id="ring-ball"></div></div><div id="fire-pad" role="button" aria-label="Fire lysovirus" title="Lysovirus — press toward a direction to fire · red tick = nearest enemy, amber dot = nearest lysin · green wedge = steering"><div id="fire-move"></div><div id="fire-needle"></div><div id="fire-enemy"></div><div id="fire-lysin"></div></div></div>
     <div id="game-overlay">
       <div id="game-overlay-title"></div>
       <div id="game-overlay-sub"></div>
